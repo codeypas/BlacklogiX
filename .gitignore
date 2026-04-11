@@ -1,0 +1,14 @@
+.vite
+frontend/dist
+frontend/node_modules
+frontend/.vite
+frontend/.env
+backend/node_modules
+backend/dist
+backend/.env
+chat-backend/.env
+chat-backend/__pycache__
+chat-backend/.pytest_cache
+chat-backend/.mypy_cache
+postgres-data
+.DS_Store

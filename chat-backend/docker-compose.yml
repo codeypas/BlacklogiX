@@ -1,0 +1,28 @@
+services:
+  chat-postgres:
+    image: postgres:16-alpine
+    container_name: blacklogix-chat-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: blacklogix_chat
+      POSTGRES_USER: blacklogix
+      POSTGRES_PASSWORD: blacklogix
+    ports:
+      - "5433:5432"
+    volumes:
+      - chat-postgres-data:/var/lib/postgresql/data
+
+  chat-backend:
+    build:
+      context: .
+    container_name: blacklogix-chat-backend
+    restart: unless-stopped
+    depends_on:
+      - chat-postgres
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+
+volumes:
+  chat-postgres-data:

@@ -1,0 +1,46 @@
+from __future__ import annotations
+
+from datetime import datetime
+from typing import List, Optional
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class ChatSessionCreateRequest(BaseModel):
+    title: Optional[str] = None
+
+
+class MessageCreateRequest(BaseModel):
+    session_id: UUID
+    message: str = Field(min_length=1)
+
+
+class MessageRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    role: str
+    content: str
+    timestamp: datetime
+
+
+class ChatSessionRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    user_id: UUID
+    title: str
+    created_at: datetime
+
+
+class ChatSessionDetailResponse(BaseModel):
+    session: ChatSessionRead
+    messages: List[MessageRead]
+
+
+class ChatMessageResponse(BaseModel):
+    session_id: UUID
+    session_title: str
+    user_message: MessageRead
+    assistant_message: MessageRead
