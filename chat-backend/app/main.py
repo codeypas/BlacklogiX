@@ -6,10 +6,12 @@ from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.api.alert_routes import router as alert_router
 from app.api.auth_routes import router as auth_router
 from app.api.chat_routes import router as chat_router
 from app.api.event_routes import router as event_router
 from app.api.integrity_routes import router as integrity_router
+from app.api.monitoring_routes import router as monitoring_router
 from app.api.platform_routes import router as platform_router
 from app.config import settings
 from app.db.database import create_db_tables
@@ -53,7 +55,9 @@ async def health_check() -> dict[str, str]:
 
 
 app.include_router(auth_router)
+app.include_router(alert_router)
 app.include_router(chat_router)
 app.include_router(event_router)
 app.include_router(integrity_router)
+app.include_router(monitoring_router)
 app.include_router(platform_router)

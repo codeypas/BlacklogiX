@@ -43,6 +43,19 @@ class IngestionSourceStatus(str, enum.Enum):
     PAUSED = "paused"
 
 
+class AlertSeverity(str, enum.Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+class AlertStatus(str, enum.Enum):
+    OPEN = "open"
+    ACKNOWLEDGED = "acknowledged"
+    RESOLVED = "resolved"
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -143,6 +156,10 @@ class Project(Base):
         back_populates="project",
         cascade="all, delete-orphan",
     )
+    alerts: Mapped[list["Alert"]] = relationship(
+        back_populates="project",
+        cascade="all, delete-orphan",
+    )
 
 
 class IngestionSource(Base):
@@ -184,6 +201,10 @@ class IngestionSource(Base):
         cascade="all, delete-orphan",
     )
     system_events: Mapped[list["SystemEvent"]] = relationship(
+        back_populates="source",
+        cascade="all, delete-orphan",
+    )
+    alerts: Mapped[list["Alert"]] = relationship(
         back_populates="source",
         cascade="all, delete-orphan",
     )
@@ -229,6 +250,7 @@ class AIEvent(Base):
     )
 
     source: Mapped["IngestionSource"] = relationship(back_populates="ai_events")
+    alerts: Mapped[list["Alert"]] = relationship(back_populates="ai_event")
 
 
 class SystemEvent(Base):
@@ -268,6 +290,65 @@ class SystemEvent(Base):
     )
 
     source: Mapped["IngestionSource"] = relationship(back_populates="system_events")
+    alerts: Mapped[list["Alert"]] = relationship(back_populates="system_event")
+
+
+class Alert(Base):
+    __tablename__ = "alerts"
+    __table_args__ = (
+        CheckConstraint(
+            "severity in ('low', 'medium', 'high', 'critical')",
+            name="alerts_severity_check",
+        ),
+        CheckConstraint(
+            "status in ('open', 'acknowledged', 'resolved')",
+            name="alerts_status_check",
+        ),
+        Index("ix_alerts_project_created_at", "project_id", "created_at"),
+        Index("ix_alerts_project_status", "project_id", "status"),
+        Index("ix_alerts_project_severity", "project_id", "severity"),
+    )
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    project_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("projects.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    source_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ingestion_sources.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    ai_event_id: Mapped[str | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ai_events.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    system_event_id: Mapped[str | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("system_events.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    alert_type: Mapped[str] = mapped_column(String(120), nullable=False)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    severity: Mapped[str] = mapped_column(String(32), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default=AlertStatus.OPEN.value)
+    score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    metadata_json: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    project: Mapped["Project"] = relationship(back_populates="alerts")
+    source: Mapped["IngestionSource"] = relationship(back_populates="alerts")
+    ai_event: Mapped["AIEvent | None"] = relationship(back_populates="alerts")
+    system_event: Mapped["SystemEvent | None"] = relationship(back_populates="alerts")
 
 
 class ChatSession(Base):

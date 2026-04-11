@@ -3,12 +3,14 @@ from __future__ import annotations
 import re
 from typing import List, Optional
 
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.db.models import (
     AIEvent,
+    Alert,
+    AlertStatus,
     ChatSession,
     IngestionSource,
     IngestionSourceStatus,
@@ -345,6 +347,301 @@ async def list_sources_for_project(
         .order_by(IngestionSource.created_at.asc())
     )
     return list(result.scalars().all())
+
+
+async def list_ai_events_for_user(
+    session: AsyncSession,
+    *,
+    user_id: str,
+    project_id: str | None = None,
+    source_id: str | None = None,
+    event_type: str | None = None,
+    actor_id: str | None = None,
+    start_at=None,
+    end_at=None,
+    limit: int = 50,
+) -> List[AIEvent]:
+    query = (
+        select(AIEvent)
+        .join(IngestionSource, IngestionSource.id == AIEvent.source_id)
+        .join(Project, Project.id == AIEvent.project_id)
+        .join(Organization, Organization.id == Project.organization_id)
+        .join(OrganizationMembership, OrganizationMembership.organization_id == Organization.id)
+        .where(OrganizationMembership.user_id == user_id)
+        .options(selectinload(AIEvent.source))
+    )
+
+    if project_id is not None:
+        query = query.where(AIEvent.project_id == project_id)
+    if source_id is not None:
+        query = query.where(AIEvent.source_id == source_id)
+    if event_type is not None:
+        query = query.where(AIEvent.event_type == event_type)
+    if actor_id is not None:
+        query = query.where(
+            or_(
+                AIEvent.metadata_json["user_id"].astext == actor_id,
+                AIEvent.metadata_json["actor_id"].astext == actor_id,
+            )
+        )
+    if start_at is not None:
+        query = query.where(AIEvent.timestamp >= start_at)
+    if end_at is not None:
+        query = query.where(AIEvent.timestamp <= end_at)
+
+    result = await session.execute(
+        query.order_by(AIEvent.timestamp.desc(), AIEvent.created_at.desc()).limit(limit)
+    )
+    return list(result.scalars().all())
+
+
+async def list_system_events_for_user(
+    session: AsyncSession,
+    *,
+    user_id: str,
+    project_id: str | None = None,
+    source_id: str | None = None,
+    service: str | None = None,
+    level: str | None = None,
+    event_name: str | None = None,
+    actor_id: str | None = None,
+    start_at=None,
+    end_at=None,
+    limit: int = 50,
+) -> List[SystemEvent]:
+    query = (
+        select(SystemEvent)
+        .join(IngestionSource, IngestionSource.id == SystemEvent.source_id)
+        .join(Project, Project.id == SystemEvent.project_id)
+        .join(Organization, Organization.id == Project.organization_id)
+        .join(OrganizationMembership, OrganizationMembership.organization_id == Organization.id)
+        .where(OrganizationMembership.user_id == user_id)
+        .options(selectinload(SystemEvent.source))
+    )
+
+    if project_id is not None:
+        query = query.where(SystemEvent.project_id == project_id)
+    if source_id is not None:
+        query = query.where(SystemEvent.source_id == source_id)
+    if service is not None:
+        query = query.where(SystemEvent.service == service)
+    if level is not None:
+        query = query.where(SystemEvent.level == level)
+    if event_name is not None:
+        query = query.where(SystemEvent.event_name == event_name)
+    if actor_id is not None:
+        query = query.where(
+            or_(
+                SystemEvent.metadata_json["user_id"].astext == actor_id,
+                SystemEvent.metadata_json["actor_id"].astext == actor_id,
+            )
+        )
+    if start_at is not None:
+        query = query.where(SystemEvent.timestamp >= start_at)
+    if end_at is not None:
+        query = query.where(SystemEvent.timestamp <= end_at)
+
+    result = await session.execute(
+        query.order_by(SystemEvent.timestamp.desc(), SystemEvent.created_at.desc()).limit(limit)
+    )
+    return list(result.scalars().all())
+
+
+async def get_ai_event_for_user(
+    session: AsyncSession,
+    *,
+    event_id: str,
+    user_id: str,
+) -> Optional[AIEvent]:
+    result = await session.execute(
+        select(AIEvent)
+        .join(Project, Project.id == AIEvent.project_id)
+        .join(Organization, Organization.id == Project.organization_id)
+        .join(OrganizationMembership, OrganizationMembership.organization_id == Organization.id)
+        .where(AIEvent.id == event_id, OrganizationMembership.user_id == user_id)
+        .options(selectinload(AIEvent.source))
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_system_event_for_user(
+    session: AsyncSession,
+    *,
+    event_id: str,
+    user_id: str,
+) -> Optional[SystemEvent]:
+    result = await session.execute(
+        select(SystemEvent)
+        .join(Project, Project.id == SystemEvent.project_id)
+        .join(Organization, Organization.id == Project.organization_id)
+        .join(OrganizationMembership, OrganizationMembership.organization_id == Organization.id)
+        .where(SystemEvent.id == event_id, OrganizationMembership.user_id == user_id)
+        .options(selectinload(SystemEvent.source))
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
+async def count_ai_events_for_project(
+    session: AsyncSession,
+    *,
+    project_id: str,
+) -> int:
+    result = await session.execute(
+        select(func.count()).select_from(AIEvent).where(AIEvent.project_id == project_id)
+    )
+    return int(result.scalar_one() or 0)
+
+
+async def count_system_events_for_project(
+    session: AsyncSession,
+    *,
+    project_id: str,
+) -> int:
+    result = await session.execute(
+        select(func.count()).select_from(SystemEvent).where(SystemEvent.project_id == project_id)
+    )
+    return int(result.scalar_one() or 0)
+
+
+async def get_latest_ai_event_for_project(
+    session: AsyncSession,
+    *,
+    project_id: str,
+) -> Optional[AIEvent]:
+    result = await session.execute(
+        select(AIEvent)
+        .where(AIEvent.project_id == project_id)
+        .order_by(AIEvent.timestamp.desc(), AIEvent.created_at.desc())
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_latest_system_event_for_project(
+    session: AsyncSession,
+    *,
+    project_id: str,
+) -> Optional[SystemEvent]:
+    result = await session.execute(
+        select(SystemEvent)
+        .where(SystemEvent.project_id == project_id)
+        .order_by(SystemEvent.timestamp.desc(), SystemEvent.created_at.desc())
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
+async def create_alert(
+    session: AsyncSession,
+    *,
+    project_id: str,
+    source_id: str,
+    alert_type: str,
+    title: str,
+    description: str,
+    severity: str,
+    score: float,
+    ai_event_id: str | None = None,
+    system_event_id: str | None = None,
+    status: str = AlertStatus.OPEN.value,
+    metadata_json: dict | None = None,
+) -> Alert:
+    alert = Alert(
+        project_id=project_id,
+        source_id=source_id,
+        ai_event_id=ai_event_id,
+        system_event_id=system_event_id,
+        alert_type=alert_type,
+        title=title,
+        description=description,
+        severity=severity,
+        status=status,
+        score=score,
+        metadata_json=metadata_json or {},
+    )
+    session.add(alert)
+    await session.commit()
+    await session.refresh(alert)
+    return alert
+
+
+async def list_alerts_for_user(
+    session: AsyncSession,
+    *,
+    user_id: str,
+    project_id: str | None = None,
+    source_id: str | None = None,
+    severity: str | None = None,
+    status: str | None = None,
+    limit: int = 50,
+) -> List[Alert]:
+    query = (
+        select(Alert)
+        .join(Project, Project.id == Alert.project_id)
+        .join(Organization, Organization.id == Project.organization_id)
+        .join(OrganizationMembership, OrganizationMembership.organization_id == Organization.id)
+        .where(OrganizationMembership.user_id == user_id)
+        .options(
+            selectinload(Alert.source),
+            selectinload(Alert.ai_event),
+            selectinload(Alert.system_event),
+        )
+    )
+
+    if project_id is not None:
+        query = query.where(Alert.project_id == project_id)
+    if source_id is not None:
+        query = query.where(Alert.source_id == source_id)
+    if severity is not None:
+        query = query.where(Alert.severity == severity)
+    if status is not None:
+        query = query.where(Alert.status == status)
+
+    result = await session.execute(
+        query.order_by(Alert.created_at.desc()).limit(limit)
+    )
+    return list(result.scalars().all())
+
+
+async def get_alert_for_user(
+    session: AsyncSession,
+    *,
+    alert_id: str,
+    user_id: str,
+) -> Optional[Alert]:
+    result = await session.execute(
+        select(Alert)
+        .join(Project, Project.id == Alert.project_id)
+        .join(Organization, Organization.id == Project.organization_id)
+        .join(OrganizationMembership, OrganizationMembership.organization_id == Organization.id)
+        .where(Alert.id == alert_id, OrganizationMembership.user_id == user_id)
+        .options(
+            selectinload(Alert.source),
+            selectinload(Alert.ai_event),
+            selectinload(Alert.system_event),
+        )
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
+async def count_alerts_for_project(
+    session: AsyncSession,
+    *,
+    project_id: str,
+    status: str | None = None,
+    severity: str | None = None,
+) -> int:
+    query = select(func.count()).select_from(Alert).where(Alert.project_id == project_id)
+    if status is not None:
+        query = query.where(Alert.status == status)
+    if severity is not None:
+        query = query.where(Alert.severity == severity)
+
+    result = await session.execute(query)
+    return int(result.scalar_one() or 0)
 
 
 async def create_chat_session(

@@ -13,6 +13,7 @@ from app.schemas.event_schema import (
     EventAcceptedResponse,
     SystemEventIngestRequest,
 )
+from app.services.alert_service import alert_service
 from app.utils.auth import get_current_user
 from app.services.integrity_service import integrity_service
 
@@ -87,6 +88,7 @@ async def ingest_ai_event(
         metadata_json=payload.metadata,
         raw_payload=raw_payload,
     )
+    await alert_service.create_alerts_for_ai_event(db_session, event=event)
     return EventAcceptedResponse(
         id=event.id,
         kind="ai",
@@ -131,6 +133,7 @@ async def ingest_system_event(
         metadata_json=payload.metadata,
         raw_payload=raw_payload,
     )
+    await alert_service.create_alerts_for_system_event(db_session, event=event)
     return EventAcceptedResponse(
         id=event.id,
         kind="system",
@@ -181,6 +184,7 @@ async def ingest_bulk_events(
             metadata_json=item.metadata,
             raw_payload=raw_payload,
         )
+        await alert_service.create_alerts_for_ai_event(db_session, event=event)
         ai_event_ids.append(event.id)
 
     for item in payload.system_events:
@@ -212,6 +216,7 @@ async def ingest_bulk_events(
             metadata_json=item.metadata,
             raw_payload=raw_payload,
         )
+        await alert_service.create_alerts_for_system_event(db_session, event=event)
         system_event_ids.append(event.id)
 
     return BulkEventIngestResponse(

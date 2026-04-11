@@ -49,3 +49,56 @@ class BulkEventIngestResponse(BaseModel):
     ai_event_ids: list[UUID]
     system_event_ids: list[UUID]
     total_ingested: int
+
+
+class EventListItem(BaseModel):
+    id: UUID
+    kind: str
+    project_id: UUID
+    source_id: UUID
+    source_name: str
+    source_type: str
+    timestamp: datetime
+    event_type: str | None
+    service: str | None
+    level: str | None
+    model_name: str | None
+    model_version: str | None
+    confidence_score: float | None
+    actor_id: str | None
+    hash_algorithm: str | None
+    raw_hash: str | None
+    previous_hash: str | None
+    chain_hash: str | None
+
+
+class EventDetailResponse(EventListItem):
+    prompt: str | None
+    response: str | None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    raw_payload: dict[str, Any] = Field(default_factory=dict)
+
+
+class EventListResponse(BaseModel):
+    items: list[EventListItem]
+    total_returned: int
+
+
+class ProjectOverviewResponse(BaseModel):
+    project_id: UUID
+    project_name: str
+    total_events: int
+    ai_events: int
+    system_events: int
+    total_alerts: int
+    open_alerts: int
+    critical_alerts: int
+    total_sources: int
+    ready_sources: int
+    connected_sources: int
+    paused_sources: int
+    verified_events: int
+    invalid_events: int
+    integrity_score_percent: float
+    latest_event_at: datetime | None
+    checked_at: datetime
