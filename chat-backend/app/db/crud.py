@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from sqlalchemy import func, or_, select
@@ -180,12 +181,17 @@ async def create_ingestion_source(
     source_type: IngestionSourceType,
     name: str,
     status: IngestionSourceStatus = IngestionSourceStatus.READY,
+    api_key_prefix: str | None = None,
+    api_key_hash: str | None = None,
 ) -> IngestionSource:
     source = IngestionSource(
         project_id=project_id,
         type=source_type.value,
         name=name,
         status=status.value,
+        api_key_prefix=api_key_prefix,
+        api_key_hash=api_key_hash,
+        last_key_rotated_at=datetime.now(timezone.utc) if api_key_hash else None,
     )
     session.add(source)
     await session.commit()
@@ -219,6 +225,33 @@ async def get_source_for_user(
         .limit(1)
     )
     return result.scalar_one_or_none()
+
+
+async def get_source_by_api_key_hash(
+    session: AsyncSession,
+    api_key_hash: str,
+) -> Optional[IngestionSource]:
+    result = await session.execute(
+        select(IngestionSource)
+        .where(IngestionSource.api_key_hash == api_key_hash)
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
+async def rotate_ingestion_source_api_key(
+    session: AsyncSession,
+    *,
+    source: IngestionSource,
+    api_key_prefix: str,
+    api_key_hash: str,
+) -> IngestionSource:
+    source.api_key_prefix = api_key_prefix
+    source.api_key_hash = api_key_hash
+    source.last_key_rotated_at = datetime.now(timezone.utc)
+    await session.commit()
+    await session.refresh(source)
+    return source
 
 
 async def create_ai_event(
@@ -627,6 +660,18 @@ async def get_alert_for_user(
     return result.scalar_one_or_none()
 
 
+async def update_alert_status(
+    session: AsyncSession,
+    *,
+    alert: Alert,
+    status: str,
+) -> Alert:
+    alert.status = status
+    await session.commit()
+    await session.refresh(alert)
+    return alert
+
+
 async def count_alerts_for_project(
     session: AsyncSession,
     *,
@@ -644,12 +689,105 @@ async def count_alerts_for_project(
     return int(result.scalar_one() or 0)
 
 
+async def count_recent_ai_events_for_source(
+    session: AsyncSession,
+    *,
+    source_id: str,
+    since,
+    actor_id: str | None = None,
+    confidence_below: float | None = None,
+) -> int:
+    query = select(func.count()).select_from(AIEvent).where(
+        AIEvent.source_id == source_id,
+        AIEvent.timestamp >= since,
+    )
+
+    if actor_id is not None:
+        query = query.where(
+            or_(
+                AIEvent.metadata_json["user_id"].astext == actor_id,
+                AIEvent.metadata_json["actor_id"].astext == actor_id,
+            )
+        )
+
+    if confidence_below is not None:
+        query = query.where(AIEvent.confidence_score.is_not(None), AIEvent.confidence_score < confidence_below)
+
+    result = await session.execute(query)
+    return int(result.scalar_one() or 0)
+
+
+async def count_recent_ai_events_with_prompt_terms(
+    session: AsyncSession,
+    *,
+    source_id: str,
+    since,
+    terms: list[str],
+) -> int:
+    if not terms:
+        return 0
+
+    lowered_prompt = func.lower(AIEvent.prompt)
+    query = select(func.count()).select_from(AIEvent).where(
+        AIEvent.source_id == source_id,
+        AIEvent.timestamp >= since,
+        AIEvent.prompt.is_not(None),
+        or_(*[lowered_prompt.contains(term) for term in terms]),
+    )
+
+    result = await session.execute(query)
+    return int(result.scalar_one() or 0)
+
+
+async def count_recent_system_events_for_source(
+    session: AsyncSession,
+    *,
+    source_id: str,
+    since,
+    service: str | None = None,
+    level: str | None = None,
+    event_name: str | None = None,
+    actor_id: str | None = None,
+    ip: str | None = None,
+) -> int:
+    query = select(func.count()).select_from(SystemEvent).where(
+        SystemEvent.source_id == source_id,
+        SystemEvent.timestamp >= since,
+    )
+
+    if service is not None:
+        query = query.where(SystemEvent.service == service)
+    if level is not None:
+        query = query.where(SystemEvent.level == level)
+    if event_name is not None:
+        query = query.where(SystemEvent.event_name == event_name)
+    if actor_id is not None:
+        query = query.where(
+            or_(
+                SystemEvent.metadata_json["user_id"].astext == actor_id,
+                SystemEvent.metadata_json["actor_id"].astext == actor_id,
+            )
+        )
+    if ip is not None:
+        query = query.where(SystemEvent.metadata_json["ip"].astext == ip)
+
+    result = await session.execute(query)
+    return int(result.scalar_one() or 0)
+
+
 async def create_chat_session(
     session: AsyncSession,
     user_id: str,
     title: str = "New Chat",
+    project_id: str | None = None,
+    context_json: dict | None = None,
 ) -> ChatSession:
-    chat_session = ChatSession(user_id=user_id, title=title)
+    chat_session = ChatSession(
+        user_id=user_id,
+        project_id=project_id,
+        title=title,
+        context_json=context_json or {},
+    )
     session.add(chat_session)
     await session.commit()
     await session.refresh(chat_session)

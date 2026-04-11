@@ -189,6 +189,9 @@ class IngestionSource(Base):
         nullable=False,
         default=IngestionSourceStatus.READY.value,
     )
+    api_key_prefix: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    api_key_hash: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
+    last_key_rotated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -361,7 +364,14 @@ class ChatSession(Base):
         index=True,
         nullable=False,
     )
+    project_id: Mapped[str | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("projects.id", ondelete="SET NULL"),
+        index=True,
+        nullable=True,
+    )
     title: Mapped[str] = mapped_column(String(255), nullable=False, default="New Chat")
+    context_json: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

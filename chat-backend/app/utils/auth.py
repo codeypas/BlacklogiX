@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+import hashlib
+import secrets
 from typing import Any, Dict, Optional
 
 import jwt
@@ -14,9 +16,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.db import crud
 from app.db.database import get_db_session
-from app.db.models import User
+from app.db.models import IngestionSource, User
 
 bearer_scheme = HTTPBearer(auto_error=False)
+SOURCE_API_KEY_PREFIX = "blx_src_"
 
 
 def verify_google_id_token(google_id_token: str) -> Dict[str, Any]:
@@ -61,15 +64,12 @@ def decode_access_token(token: str) -> Dict[str, Any]:
         ) from exc
 
 
-async def get_current_user(
+async def get_optional_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
     db_session: AsyncSession = Depends(get_db_session),
-) -> User:
+) -> Optional[User]:
     if credentials is None or credentials.scheme.lower() != "bearer":
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required",
-        )
+        return None
 
     payload = decode_access_token(credentials.credentials)
     user_id = payload.get("sub")
@@ -100,3 +100,42 @@ async def get_current_user(
         )
 
     return user
+
+
+async def get_current_user(
+    current_user: Optional[User] = Depends(get_optional_current_user),
+) -> User:
+    if current_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+        )
+    return current_user
+
+
+def generate_source_api_key() -> str:
+    return f"{SOURCE_API_KEY_PREFIX}{secrets.token_urlsafe(24)}"
+
+
+def hash_source_api_key(api_key: str) -> str:
+    return hashlib.sha256(api_key.encode("utf-8")).hexdigest()
+
+
+def get_source_api_key_prefix(api_key: str) -> str:
+    if len(api_key) <= 16:
+        return api_key
+    return api_key[:16]
+
+
+async def get_source_from_api_key(
+    *,
+    api_key: str,
+    db_session: AsyncSession,
+) -> Optional[IngestionSource]:
+    normalized_key = api_key.strip()
+    if not normalized_key:
+        return None
+    return await crud.get_source_by_api_key_hash(
+        db_session,
+        hash_source_api_key(normalized_key),
+    )

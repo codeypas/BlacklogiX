@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import crud
-from app.db.models import AIEvent, Alert, AlertSeverity, SystemEvent, User
+from app.db.models import AIEvent, Alert, AlertSeverity, AlertStatus, SystemEvent, User
 from app.schemas.alert_schema import AlertDetailResponse, AlertListItem, AlertListResponse
 
 
@@ -36,6 +37,12 @@ class AlertService:
         "geo_velocity",
         "malware",
     )
+    ai_low_confidence_threshold = 0.45
+    ai_low_confidence_burst_count = 3
+    ai_actor_velocity_count = 5
+    system_error_burst_count = 5
+    system_repeat_event_count = 4
+    system_auth_cluster_count = 3
 
     def _build_alert_payload(
         self,
@@ -99,6 +106,91 @@ class AlertService:
 
         return alerts
 
+    async def evaluate_ai_anomalies(
+        self,
+        db_session: AsyncSession,
+        *,
+        event: AIEvent,
+    ) -> list[dict[str, Any]]:
+        alerts: list[dict[str, Any]] = []
+        metadata = event.metadata_json or {}
+        actor_id = metadata.get("actor_id") or metadata.get("user_id")
+        ten_minutes_ago = event.timestamp - timedelta(minutes=10)
+        fifteen_minutes_ago = event.timestamp - timedelta(minutes=15)
+        two_minutes_ago = event.timestamp - timedelta(minutes=2)
+
+        matched_terms = [term for term in self.ai_prompt_injection_terms if term in (event.prompt or "").lower()]
+        if matched_terms:
+            recent_prompt_attacks = await crud.count_recent_ai_events_with_prompt_terms(
+                db_session,
+                source_id=str(event.source_id),
+                since=ten_minutes_ago,
+                terms=list(matched_terms),
+            )
+            if recent_prompt_attacks >= 3:
+                alerts.append(
+                    self._build_alert_payload(
+                        alert_type="prompt_attack_burst",
+                        title="Repeated prompt attack pattern detected",
+                        description="Multiple recent prompts from the same source contain instruction override or jailbreak markers, indicating an active attack burst.",
+                        severity=AlertSeverity.CRITICAL,
+                        score=0.99,
+                        metadata={
+                            "matched_prompt_terms": matched_terms,
+                            "recent_prompt_attack_events": recent_prompt_attacks,
+                            "window_minutes": 10,
+                        },
+                    )
+                )
+
+        if event.confidence_score is not None and event.confidence_score < self.ai_low_confidence_threshold:
+            low_confidence_count = await crud.count_recent_ai_events_for_source(
+                db_session,
+                source_id=str(event.source_id),
+                since=fifteen_minutes_ago,
+                confidence_below=self.ai_low_confidence_threshold,
+            )
+            if low_confidence_count >= self.ai_low_confidence_burst_count:
+                alerts.append(
+                    self._build_alert_payload(
+                        alert_type="low_confidence_burst",
+                        title="Low-confidence response burst detected",
+                        description="Multiple recent AI responses from this source fell below the confidence threshold, suggesting degraded model reliability or prompt manipulation.",
+                        severity=AlertSeverity.HIGH,
+                        score=0.91,
+                        metadata={
+                            "confidence_threshold": self.ai_low_confidence_threshold,
+                            "recent_low_confidence_events": low_confidence_count,
+                            "window_minutes": 15,
+                        },
+                    )
+                )
+
+        if actor_id:
+            actor_burst_count = await crud.count_recent_ai_events_for_source(
+                db_session,
+                source_id=str(event.source_id),
+                since=two_minutes_ago,
+                actor_id=str(actor_id),
+            )
+            if actor_burst_count >= self.ai_actor_velocity_count:
+                alerts.append(
+                    self._build_alert_payload(
+                        alert_type="ai_actor_velocity",
+                        title="Abnormal AI request velocity detected",
+                        description="The same actor generated an unusual burst of AI requests in a short window, which may indicate abuse, automation, or prompt probing.",
+                        severity=AlertSeverity.HIGH,
+                        score=0.88,
+                        metadata={
+                            "actor_id": actor_id,
+                            "recent_actor_event_count": actor_burst_count,
+                            "window_minutes": 2,
+                        },
+                    )
+                )
+
+        return alerts
+
     def evaluate_system_event(self, event: SystemEvent) -> list[dict[str, Any]]:
         alerts: list[dict[str, Any]] = []
         event_name = (event.event_name or "").lower()
@@ -144,6 +236,95 @@ class AlertService:
 
         return alerts
 
+    async def evaluate_system_anomalies(
+        self,
+        db_session: AsyncSession,
+        *,
+        event: SystemEvent,
+    ) -> list[dict[str, Any]]:
+        alerts: list[dict[str, Any]] = []
+        metadata = event.metadata_json or {}
+        actor_id = metadata.get("actor_id") or metadata.get("user_id")
+        ip = metadata.get("ip")
+        ten_minutes_ago = event.timestamp - timedelta(minutes=10)
+        fifteen_minutes_ago = event.timestamp - timedelta(minutes=15)
+
+        if (event.level or "").lower() == "error":
+            error_burst_count = await crud.count_recent_system_events_for_source(
+                db_session,
+                source_id=str(event.source_id),
+                since=ten_minutes_ago,
+                service=event.service,
+                level=event.level,
+            )
+            if error_burst_count >= self.system_error_burst_count:
+                alerts.append(
+                    self._build_alert_payload(
+                        alert_type="system_error_burst",
+                        title="Error burst detected for service",
+                        description="A concentrated burst of error-level events was observed for the same service, which may indicate service instability or active disruption.",
+                        severity=AlertSeverity.HIGH,
+                        score=0.86,
+                        metadata={
+                            "service": event.service,
+                            "recent_error_events": error_burst_count,
+                            "window_minutes": 10,
+                        },
+                    )
+                )
+
+        repeated_event_count = await crud.count_recent_system_events_for_source(
+            db_session,
+            source_id=str(event.source_id),
+            since=fifteen_minutes_ago,
+            event_name=event.event_name,
+            service=event.service,
+        )
+        if repeated_event_count >= self.system_repeat_event_count:
+            alerts.append(
+                self._build_alert_payload(
+                    alert_type="repeated_system_event",
+                    title="Repeated suspicious system event detected",
+                    description="The same system event repeated across a short time window, suggesting a sustained issue or coordinated attack behavior.",
+                    severity=AlertSeverity.HIGH,
+                    score=0.84,
+                    metadata={
+                        "service": event.service,
+                        "event_name": event.event_name,
+                        "recent_repeat_count": repeated_event_count,
+                        "window_minutes": 15,
+                    },
+                )
+            )
+
+        auth_cluster_trigger = "failed_login" in (event.event_name or "").lower() or "brute_force" in (event.event_name or "").lower()
+        if auth_cluster_trigger and (actor_id or ip):
+            auth_cluster_count = await crud.count_recent_system_events_for_source(
+                db_session,
+                source_id=str(event.source_id),
+                since=ten_minutes_ago,
+                actor_id=str(actor_id) if actor_id else None,
+                ip=str(ip) if ip else None,
+            )
+            if auth_cluster_count >= self.system_auth_cluster_count:
+                alerts.append(
+                    self._build_alert_payload(
+                        alert_type="auth_failure_cluster",
+                        title="Authentication failure cluster detected",
+                        description="Repeated authentication failures from the same actor or IP were detected in a tight time window, indicating probable credential attack behavior.",
+                        severity=AlertSeverity.CRITICAL,
+                        score=0.97,
+                        metadata={
+                            "actor_id": actor_id,
+                            "ip": ip,
+                            "recent_auth_failures": auth_cluster_count,
+                            "window_minutes": 10,
+                        },
+                    )
+                )
+
+        return alerts
+
     async def create_alerts_for_ai_event(
         self,
         db_session: AsyncSession,
@@ -151,6 +332,7 @@ class AlertService:
         event: AIEvent,
     ) -> list[Alert]:
         alert_payloads = self.evaluate_ai_event(event)
+        alert_payloads.extend(await self.evaluate_ai_anomalies(db_session, event=event))
         created_alerts: list[Alert] = []
         for payload in alert_payloads:
             alert = await crud.create_alert(
@@ -175,6 +357,7 @@ class AlertService:
         event: SystemEvent,
     ) -> list[Alert]:
         alert_payloads = self.evaluate_system_event(event)
+        alert_payloads.extend(await self.evaluate_system_anomalies(db_session, event=event))
         created_alerts: list[Alert] = []
         for payload in alert_payloads:
             alert = await crud.create_alert(
@@ -258,6 +441,64 @@ class AlertService:
         return AlertDetailResponse(
             **item.model_dump(),
             metadata=alert.metadata_json or {},
+        )
+
+    async def update_alert_status(
+        self,
+        db_session: AsyncSession,
+        *,
+        user: User,
+        alert_id: str,
+        status_value: str,
+    ) -> AlertDetailResponse:
+        alert = await crud.get_alert_for_user(
+            db_session,
+            alert_id=alert_id,
+            user_id=str(user.id),
+        )
+        if alert is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Alert not found or inaccessible",
+            )
+
+        updated_alert = await crud.update_alert_status(
+            db_session,
+            alert=alert,
+            status=status_value,
+        )
+        item = self._to_alert_item(updated_alert)
+        return AlertDetailResponse(
+            **item.model_dump(),
+            metadata=updated_alert.metadata_json or {},
+        )
+
+    async def acknowledge_alert(
+        self,
+        db_session: AsyncSession,
+        *,
+        user: User,
+        alert_id: str,
+    ) -> AlertDetailResponse:
+        return await self.update_alert_status(
+            db_session,
+            user=user,
+            alert_id=alert_id,
+            status_value=AlertStatus.ACKNOWLEDGED.value,
+        )
+
+    async def resolve_alert(
+        self,
+        db_session: AsyncSession,
+        *,
+        user: User,
+        alert_id: str,
+    ) -> AlertDetailResponse:
+        return await self.update_alert_status(
+            db_session,
+            user=user,
+            alert_id=alert_id,
+            status_value=AlertStatus.RESOLVED.value,
         )
 
 

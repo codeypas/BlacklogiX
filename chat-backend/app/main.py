@@ -13,6 +13,7 @@ from app.api.event_routes import router as event_router
 from app.api.integrity_routes import router as integrity_router
 from app.api.monitoring_routes import router as monitoring_router
 from app.api.platform_routes import router as platform_router
+from app.api.report_routes import router as report_router
 from app.config import settings
 from app.db.database import create_db_tables
 
@@ -61,3 +62,4 @@ app.include_router(event_router)
 app.include_router(integrity_router)
 app.include_router(monitoring_router)
 app.include_router(platform_router)
+app.include_router(report_router)

@@ -70,3 +70,22 @@ async def create_db_tables() -> None:
                 """
             )
         )
+        await connection.execute(
+            text(
+                """
+                ALTER TABLE ingestion_sources
+                ADD COLUMN IF NOT EXISTS api_key_prefix VARCHAR(32),
+                ADD COLUMN IF NOT EXISTS api_key_hash VARCHAR(64),
+                ADD COLUMN IF NOT EXISTS last_key_rotated_at TIMESTAMPTZ
+                """
+            )
+        )
+        await connection.execute(
+            text(
+                """
+                ALTER TABLE chat_sessions
+                ADD COLUMN IF NOT EXISTS project_id UUID,
+                ADD COLUMN IF NOT EXISTS context_json JSONB NOT NULL DEFAULT '{}'::jsonb
+                """
+            )
+        )

@@ -14,8 +14,10 @@ SYSTEM_PROMPT = """
 You are the BlackLogix AI assistant.
 
 You help users with security analytics conversations in a clear, concise, and helpful way.
-Use the current conversation history only. Do not invent account data, alert records, or
-session details that are not present in the chat.
+Use the current conversation history and any provided investigation context only.
+Do not invent account data, alert records, event details, or integrity evidence that are
+not present in the chat or the supplied context.
+If context is partial, say what is known and what is still missing.
 """.strip()
 
 
@@ -28,14 +30,25 @@ class LLMService:
         )
 
     @staticmethod
-    def _to_langchain_messages(messages: List[Message]) -> List[object]:
+    def _to_langchain_messages(messages: List[Message], *, context_summary: str | None = None) -> List[object]:
         conversation: List[object] = [SystemMessage(content=SYSTEM_PROMPT)]
+        if context_summary:
+            conversation.append(SystemMessage(content=context_summary))
         for message in messages:
             if message.role == "user":
                 conversation.append(HumanMessage(content=message.content))
             else:
                 conversation.append(AIMessage(content=message.content))
         return conversation
+
+    @staticmethod
+    def _describe_exception(exc: Exception) -> str:
+        detail = " ".join(str(exc).split()).strip()
+        if not detail:
+            return exc.__class__.__name__
+        if len(detail) <= 180:
+            return detail
+        return detail[:177].rstrip() + "..."
 
     @staticmethod
     def _normalize_content(content: object) -> str:
@@ -51,13 +64,13 @@ class LLMService:
             return "\n".join(parts).strip()
         return str(content).strip()
 
-    async def generate_reply(self, messages: List[Message]) -> str:
+    async def generate_reply(self, messages: List[Message], *, context_summary: str | None = None) -> str:
         try:
-            result = await self._llm.ainvoke(self._to_langchain_messages(messages))
+            result = await self._llm.ainvoke(self._to_langchain_messages(messages, context_summary=context_summary))
         except Exception as exc:  # noqa: BLE001
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="Gemini failed to generate a response",
+                detail=f"Gemini failed to generate a response: {self._describe_exception(exc)}",
             ) from exc
 
         response_text = self._normalize_content(result.content)

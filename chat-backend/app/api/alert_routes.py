@@ -44,3 +44,29 @@ async def get_alert_detail(
         user=current_user,
         alert_id=alert_id,
     )
+
+
+@router.post("/{alert_id}/acknowledge", response_model=AlertDetailResponse, status_code=status.HTTP_200_OK)
+async def acknowledge_alert(
+    alert_id: str,
+    db_session: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+) -> AlertDetailResponse:
+    return await alert_service.acknowledge_alert(
+        db_session,
+        user=current_user,
+        alert_id=alert_id,
+    )
+
+
+@router.post("/{alert_id}/resolve", response_model=AlertDetailResponse, status_code=status.HTTP_200_OK)
+async def resolve_alert(
+    alert_id: str,
+    db_session: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+) -> AlertDetailResponse:
+    return await alert_service.resolve_alert(
+        db_session,
+        user=current_user,
+        alert_id=alert_id,
+    )

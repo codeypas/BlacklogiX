@@ -65,6 +65,26 @@ Point the chat UI to:
 VITE_CHAT_API_URL=http://localhost:8000
 ```
 
+## Python SDK / Agent
+
+The first ingestion SDK is available at:
+
+```text
+sdk/python/blacklogix-agent
+```
+
+It uses the source API key generated from the dashboard and can send:
+
+- AI events
+- system events
+- bulk events
+
+See:
+
+```text
+sdk/python/blacklogix-agent/README.md
+```
+
 ## Notes
 
 - PostgreSQL is exposed on host port `5433` to avoid conflicting with the existing repo database.

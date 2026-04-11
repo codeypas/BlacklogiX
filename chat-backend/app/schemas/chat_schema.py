@@ -9,6 +9,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class ChatSessionCreateRequest(BaseModel):
     title: Optional[str] = None
+    project_id: UUID | None = None
+    alert_id: UUID | None = None
+    event_id: UUID | None = None
 
 
 class MessageCreateRequest(BaseModel):
@@ -30,7 +33,9 @@ class ChatSessionRead(BaseModel):
 
     id: UUID
     user_id: UUID
+    project_id: UUID | None = None
     title: str
+    context_json: dict = Field(default_factory=dict)
     created_at: datetime
 
 

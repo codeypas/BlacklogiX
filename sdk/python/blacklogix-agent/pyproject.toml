@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "blacklogix-agent"
+version = "0.1.0"
+description = "Python ingestion SDK for BlackLogix AIShield Ledger"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+  { name = "BlackLogix" }
+]
+dependencies = []
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["blacklogix_agent*"]

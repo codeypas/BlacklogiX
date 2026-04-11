@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Path, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import crud
@@ -14,9 +14,28 @@ from app.schemas.platform_schema import (
     ProjectCreateRequest,
     ProjectRead,
 )
-from app.utils.auth import get_current_user
+from app.utils.auth import (
+    generate_source_api_key,
+    get_current_user,
+    get_source_api_key_prefix,
+    hash_source_api_key,
+)
 
 router = APIRouter(tags=["platform"])
+
+
+def _serialize_source(source, *, plain_api_key: str | None = None) -> IngestionSourceRead:
+    return IngestionSourceRead(
+        id=source.id,
+        project_id=source.project_id,
+        type=source.type,
+        name=source.name,
+        status=source.status,
+        api_key_prefix=source.api_key_prefix,
+        last_key_rotated_at=source.last_key_rotated_at,
+        plain_api_key=plain_api_key,
+        created_at=source.created_at,
+    )
 
 
 @router.post("/organizations", response_model=OrganizationRead, status_code=status.HTTP_201_CREATED)
@@ -93,14 +112,17 @@ async def create_ingestion_source(
             detail="Project not found or inaccessible",
         )
 
+    plain_api_key = generate_source_api_key()
     source = await crud.create_ingestion_source(
         db_session,
         project_id=str(payload.project_id),
         source_type=IngestionSourceType(payload.type),
         name=payload.name.strip(),
         status=IngestionSourceStatus(payload.status),
+        api_key_prefix=get_source_api_key_prefix(plain_api_key),
+        api_key_hash=hash_source_api_key(plain_api_key),
     )
-    return IngestionSourceRead.model_validate(source)
+    return _serialize_source(source, plain_api_key=plain_api_key)
 
 
 @router.get("/sources", response_model=list[IngestionSourceRead], status_code=status.HTTP_200_OK)
@@ -109,4 +131,35 @@ async def list_ingestion_sources(
     current_user: User = Depends(get_current_user),
 ) -> list[IngestionSourceRead]:
     sources = await crud.list_sources_for_user(db_session, str(current_user.id))
-    return [IngestionSourceRead.model_validate(item) for item in sources]
+    return [_serialize_source(item) for item in sources]
+
+
+@router.post(
+    "/sources/{source_id}/rotate-key",
+    response_model=IngestionSourceRead,
+    status_code=status.HTTP_200_OK,
+)
+async def rotate_ingestion_source_key(
+    source_id: str = Path(...),
+    db_session: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+) -> IngestionSourceRead:
+    source = await crud.get_source_for_user(
+        db_session,
+        source_id=source_id,
+        user_id=str(current_user.id),
+    )
+    if source is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Source not found or inaccessible",
+        )
+
+    plain_api_key = generate_source_api_key()
+    source = await crud.rotate_ingestion_source_api_key(
+        db_session,
+        source=source,
+        api_key_prefix=get_source_api_key_prefix(plain_api_key),
+        api_key_hash=hash_source_api_key(plain_api_key),
+    )
+    return _serialize_source(source, plain_api_key=plain_api_key)

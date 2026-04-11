@@ -48,4 +48,7 @@ class IngestionSourceRead(BaseModel):
     type: str
     name: str
     status: str
+    api_key_prefix: str | None = None
+    last_key_rotated_at: datetime | None = None
+    plain_api_key: str | None = None
     created_at: datetime
