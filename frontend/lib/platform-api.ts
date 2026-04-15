@@ -107,6 +107,14 @@ export type EventListResponse = {
   total_returned: number;
 };
 
+export type EventAcceptedResponse = {
+  id: string;
+  kind: "ai" | "system";
+  project_id: string;
+  source_id: string;
+  timestamp: string;
+};
+
 export type ChatSession = {
   id: string;
   user_id: string;
@@ -128,6 +136,52 @@ export type ChatMessageResponse = {
   session_title: string;
   user_message: ChatMessage;
   assistant_message: ChatMessage;
+};
+
+export type IntegrityVerifyResponse = {
+  source_id: string;
+  source_type: string;
+  total_events: number;
+  verified_events: number;
+  invalid_events: number;
+  legacy_events: number;
+  is_valid: boolean;
+  needs_backfill: boolean;
+  first_invalid_event_id: string | null;
+  latest_chain_hash: string | null;
+  expected_chain_hash: string | null;
+  actual_chain_hash: string | null;
+};
+
+export type IntegrityProjectSummary = {
+  project_id: string;
+  total_sources: number;
+  total_events: number;
+  verified_events: number;
+  invalid_events: number;
+  legacy_events: number;
+  checked_at: string;
+  sources: Array<{
+    source_id: string;
+    source_name: string;
+    source_type: string;
+    total_events: number;
+    verified_events: number;
+    invalid_events: number;
+    legacy_events: number;
+    needs_backfill: boolean;
+    latest_chain_hash: string | null;
+  }>;
+};
+
+export type IntegrityBackfillResponse = {
+  source_id: string;
+  source_type: string;
+  total_events: number;
+  backfilled_events: number;
+  latest_chain_hash: string | null;
+  checked_at: string;
+  verification: IntegrityVerifyResponse;
 };
 
 export type ProjectAuditReport = {
@@ -266,6 +320,31 @@ export function getProjectAuditReport(projectId: string) {
   return apiRequest<ProjectAuditReport>(`/reports/project/${projectId}`);
 }
 
+export async function getProjectAuditReportPdf(projectId: string) {
+  const token = getAuthToken();
+
+  if (!token) {
+    throw new Error("Authentication required");
+  }
+
+  const response = await fetch(`${platformApiUrl}/reports/project/${projectId}/pdf`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null);
+    const detail =
+      payload && typeof payload === "object" && "detail" in payload
+        ? String(payload.detail)
+        : "Request failed";
+    throw new Error(detail);
+  }
+
+  return response.blob();
+}
+
 export function createChatSession(input?: {
   title?: string;
   projectId?: string;
@@ -289,6 +368,80 @@ export function sendChatMessage(input: { sessionId: string; message: string }) {
     body: JSON.stringify({
       session_id: input.sessionId,
       message: input.message,
+    }),
+  });
+}
+
+export function verifySourceIntegrity(sourceId: string) {
+  return apiRequest<IntegrityVerifyResponse>("/integrity/verify", {
+    method: "POST",
+    body: JSON.stringify({ source_id: sourceId }),
+  });
+}
+
+export function getProjectIntegritySummary(projectId: string) {
+  return apiRequest<IntegrityProjectSummary>(`/integrity/project/${projectId}/summary`);
+}
+
+export function backfillSourceIntegrity(sourceId: string) {
+  return apiRequest<IntegrityBackfillResponse>("/integrity/backfill", {
+    method: "POST",
+    body: JSON.stringify({ source_id: sourceId }),
+  });
+}
+
+export function ingestAiEvent(input: {
+  projectId: string;
+  sourceId: string;
+  timestamp: string;
+  eventType: string;
+  modelName?: string;
+  modelVersion?: string;
+  prompt?: string;
+  response?: string;
+  confidenceScore?: number;
+  metadata?: Record<string, unknown>;
+  rawPayload?: Record<string, unknown>;
+}) {
+  return apiRequest<EventAcceptedResponse>("/events/ai", {
+    method: "POST",
+    body: JSON.stringify({
+      project_id: input.projectId,
+      source_id: input.sourceId,
+      timestamp: input.timestamp,
+      event_type: input.eventType,
+      model_name: input.modelName,
+      model_version: input.modelVersion,
+      prompt: input.prompt,
+      response: input.response,
+      confidence_score: input.confidenceScore,
+      metadata: input.metadata ?? {},
+      raw_payload: input.rawPayload,
+    }),
+  });
+}
+
+export function ingestSystemEvent(input: {
+  projectId: string;
+  sourceId: string;
+  timestamp: string;
+  service: string;
+  level: string;
+  event: string;
+  metadata?: Record<string, unknown>;
+  rawPayload?: Record<string, unknown>;
+}) {
+  return apiRequest<EventAcceptedResponse>("/events/system", {
+    method: "POST",
+    body: JSON.stringify({
+      project_id: input.projectId,
+      source_id: input.sourceId,
+      timestamp: input.timestamp,
+      service: input.service,
+      level: input.level,
+      event: input.event,
+      metadata: input.metadata ?? {},
+      raw_payload: input.rawPayload,
     }),
   });
 }

@@ -31,6 +31,14 @@ Then copy:
 - source id
 - source API key
 
+For a full pilot walkthrough, including recommended AI fields such as
+`training_data_hash`, `risk_flags`, `request_id`, and integrity verification steps,
+see:
+
+```text
+docs/pilot-integration-guide.md
+```
+
 ## Environment example
 
 ```bash
@@ -54,12 +62,24 @@ client = BlackLogixClient(
 
 client.ingest_ai_event(
     event_type="model_inference",
-    model_name="gpt-4o",
-    model_version="v1",
-    prompt="Summarize this incident",
-    response="Summary generated.",
-    confidence_score=0.84,
-    metadata={"user_id": "7283", "latency_ms": 920},
+    model_name="pilot-model",
+    model_version="2026.04",
+    prompt="Summarize suspicious activity for account 42",
+    response="No confirmed attack was detected in this sample.",
+    confidence_score=0.91,
+    metadata={
+        "user_id": "pilot-user-42",
+        "request_id": "req-1001",
+        "session_id": "sess-1",
+        "latency_ms": 438,
+        "risk_flags": ["pilot_live_event"],
+        "training_data_hash": "train_hash_demo_v1",
+    },
+    raw_payload={
+        "input": {"message": "Summarize suspicious activity for account 42"},
+        "output": {"text": "No confirmed attack was detected in this sample."},
+        "training_data_hash": "train_hash_demo_v1",
+    },
 )
 ```
 
@@ -70,7 +90,15 @@ client.ingest_system_event(
     service="auth-service",
     level="error",
     event="failed_login_brute_force",
-    metadata={"user_id": "7283", "failed_attempts": 22},
+    metadata={
+        "user_id": "pilot-user-42",
+        "ip": "127.0.0.1",
+        "request_id": "req-1002",
+        "failed_attempts": 22,
+    },
+    raw_payload={
+        "reason": "Burst of failed login attempts detected by auth-service",
+    },
 )
 ```
 

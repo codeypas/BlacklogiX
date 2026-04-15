@@ -18,6 +18,12 @@ Use the current conversation history and any provided investigation context only
 Do not invent account data, alert records, event details, or integrity evidence that are
 not present in the chat or the supplied context.
 If context is partial, say what is known and what is still missing.
+Format responses as clean plain text for a dashboard analyst:
+- do not use markdown bold like **text**
+- avoid markdown-heavy formatting
+- use short headings such as Summary, Findings, and Next action when helpful
+- use numbered points only when they improve clarity
+- use simple dash bullets for lists
 """.strip()
 
 
@@ -64,6 +70,21 @@ class LLMService:
             return "\n".join(parts).strip()
         return str(content).strip()
 
+    @staticmethod
+    def _clean_response_format(content: str) -> str:
+        lines = content.replace("**", "").splitlines()
+        normalized_lines: list[str] = []
+
+        for line in lines:
+            stripped = line.strip()
+            if stripped.startswith("* "):
+                normalized_lines.append(f"- {stripped[2:]}")
+            else:
+                normalized_lines.append(line)
+
+        cleaned = "\n".join(normalized_lines).strip()
+        return cleaned
+
     async def generate_reply(self, messages: List[Message], *, context_summary: str | None = None) -> str:
         try:
             result = await self._llm.ainvoke(self._to_langchain_messages(messages, context_summary=context_summary))
@@ -73,7 +94,7 @@ class LLMService:
                 detail=f"Gemini failed to generate a response: {self._describe_exception(exc)}",
             ) from exc
 
-        response_text = self._normalize_content(result.content)
+        response_text = self._clean_response_format(self._normalize_content(result.content))
         if not response_text:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,

@@ -85,6 +85,51 @@ See:
 sdk/python/blacklogix-agent/README.md
 ```
 
+## Node SDK / Agent
+
+A Node.js ingestion SDK is also available at:
+
+```text
+sdk/node/blacklogix-agent
+```
+
+It supports:
+
+- AI events
+- system events
+- bulk events
+- wrapper-based AI inference monitoring
+
+See:
+
+```text
+sdk/node/blacklogix-agent/README.md
+```
+
+## Pilot Integration Guide
+
+For a real customer or pilot rollout, use the shared onboarding guide at:
+
+```text
+docs/pilot-integration-guide.md
+```
+
+It covers:
+
+- organization / project / source setup
+- source API key usage
+- Python SDK integration
+- Node SDK integration
+- direct API ingestion
+- recommended pilot fields such as:
+  - model version
+  - prompt
+  - response
+  - confidence score
+  - training data hash
+  - risk flags
+- integrity verification and alert testing
+
 ## Notes
 
 - PostgreSQL is exposed on host port `5433` to avoid conflicting with the existing repo database.

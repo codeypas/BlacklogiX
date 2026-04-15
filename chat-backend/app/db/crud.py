@@ -352,6 +352,20 @@ async def get_latest_system_event_for_source(session: AsyncSession, source_id: s
     return result.scalar_one_or_none()
 
 
+async def get_ai_event_by_id(session: AsyncSession, event_id: str) -> Optional[AIEvent]:
+    result = await session.execute(
+        select(AIEvent).where(AIEvent.id == event_id)
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_system_event_by_id(session: AsyncSession, event_id: str) -> Optional[SystemEvent]:
+    result = await session.execute(
+        select(SystemEvent).where(SystemEvent.id == event_id)
+    )
+    return result.scalar_one_or_none()
+
+
 async def list_ai_events_for_source(session: AsyncSession, source_id: str) -> List[AIEvent]:
     result = await session.execute(
         select(AIEvent)

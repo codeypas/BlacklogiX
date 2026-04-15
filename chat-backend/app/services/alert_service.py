@@ -7,6 +7,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import crud
+from app.db.database import AsyncSessionLocal
 from app.db.models import AIEvent, Alert, AlertSeverity, AlertStatus, SystemEvent, User
 from app.schemas.alert_schema import AlertDetailResponse, AlertListItem, AlertListResponse
 
@@ -374,6 +375,28 @@ class AlertService:
             )
             created_alerts.append(alert)
         return created_alerts
+
+    async def process_ai_event_background(
+        self,
+        *,
+        event_id: str,
+    ) -> None:
+        async with AsyncSessionLocal() as db_session:
+            event = await crud.get_ai_event_by_id(db_session, event_id)
+            if event is None:
+                return
+            await self.create_alerts_for_ai_event(db_session, event=event)
+
+    async def process_system_event_background(
+        self,
+        *,
+        event_id: str,
+    ) -> None:
+        async with AsyncSessionLocal() as db_session:
+            event = await crud.get_system_event_by_id(db_session, event_id)
+            if event is None:
+                return
+            await self.create_alerts_for_system_event(db_session, event=event)
 
     def _to_alert_item(self, alert: Alert) -> AlertListItem:
         source = alert.source

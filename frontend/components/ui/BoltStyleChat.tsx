@@ -405,7 +405,7 @@ export function BoltStyleChat({
                     className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-7 sm:text-[15px] ${
+                      className={`max-w-[88%] whitespace-pre-wrap break-words rounded-2xl px-4 py-3 text-sm leading-7 sm:text-[15px] ${
                         message.role === 'user'
                           ? 'theme-chat-user-bubble bg-[#1488fc] text-white shadow-[0_10px_30px_rgba(20,136,252,0.25)]'
                           : 'theme-chat-assistant-bubble theme-chat-menu border border-white/10 bg-white/[0.04] text-zinc-100'

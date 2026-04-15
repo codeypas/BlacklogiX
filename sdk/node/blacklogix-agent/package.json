@@ -1,0 +1,21 @@
+{
+  "name": "blacklogix-agent",
+  "version": "0.1.0",
+  "description": "Node SDK for sending AI and system events to the BlackLogix AIShield Ledger backend.",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "blacklogix",
+    "aishield",
+    "security",
+    "audit",
+    "sdk"
+  ],
+  "license": "UNLICENSED"
+}

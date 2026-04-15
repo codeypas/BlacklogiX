@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import crud
@@ -81,6 +81,7 @@ async def _validate_source_access_and_type(
 @router.post("/ai", response_model=EventAcceptedResponse, status_code=status.HTTP_201_CREATED)
 async def ingest_ai_event(
     payload: AIEventIngestRequest,
+    background_tasks: BackgroundTasks,
     db_session: AsyncSession = Depends(get_db_session),
     current_user: User | None = Depends(get_optional_current_user),
     source_api_key: str | None = Header(default=None, alias="X-BlackLogix-Source-Key"),
@@ -118,7 +119,10 @@ async def ingest_ai_event(
         metadata_json=payload.metadata,
         raw_payload=raw_payload,
     )
-    await alert_service.create_alerts_for_ai_event(db_session, event=event)
+    background_tasks.add_task(
+        alert_service.process_ai_event_background,
+        event_id=str(event.id),
+    )
     return EventAcceptedResponse(
         id=event.id,
         kind="ai",
@@ -131,6 +135,7 @@ async def ingest_ai_event(
 @router.post("/system", response_model=EventAcceptedResponse, status_code=status.HTTP_201_CREATED)
 async def ingest_system_event(
     payload: SystemEventIngestRequest,
+    background_tasks: BackgroundTasks,
     db_session: AsyncSession = Depends(get_db_session),
     current_user: User | None = Depends(get_optional_current_user),
     source_api_key: str | None = Header(default=None, alias="X-BlackLogix-Source-Key"),
@@ -165,7 +170,10 @@ async def ingest_system_event(
         metadata_json=payload.metadata,
         raw_payload=raw_payload,
     )
-    await alert_service.create_alerts_for_system_event(db_session, event=event)
+    background_tasks.add_task(
+        alert_service.process_system_event_background,
+        event_id=str(event.id),
+    )
     return EventAcceptedResponse(
         id=event.id,
         kind="system",
@@ -178,6 +186,7 @@ async def ingest_system_event(
 @router.post("/bulk", response_model=BulkEventIngestResponse, status_code=status.HTTP_201_CREATED)
 async def ingest_bulk_events(
     payload: BulkEventIngestRequest,
+    background_tasks: BackgroundTasks,
     db_session: AsyncSession = Depends(get_db_session),
     current_user: User | None = Depends(get_optional_current_user),
     source_api_key: str | None = Header(default=None, alias="X-BlackLogix-Source-Key"),
@@ -218,7 +227,10 @@ async def ingest_bulk_events(
             metadata_json=item.metadata,
             raw_payload=raw_payload,
         )
-        await alert_service.create_alerts_for_ai_event(db_session, event=event)
+        background_tasks.add_task(
+            alert_service.process_ai_event_background,
+            event_id=str(event.id),
+        )
         ai_event_ids.append(event.id)
 
     for item in payload.system_events:
@@ -251,7 +263,10 @@ async def ingest_bulk_events(
             metadata_json=item.metadata,
             raw_payload=raw_payload,
         )
-        await alert_service.create_alerts_for_system_event(db_session, event=event)
+        background_tasks.add_task(
+            alert_service.process_system_event_background,
+            event_id=str(event.id),
+        )
         system_event_ids.append(event.id)
 
     return BulkEventIngestResponse(
