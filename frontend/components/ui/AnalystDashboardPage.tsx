@@ -15,6 +15,9 @@ import {
   ShieldCheck,
   X,
 } from "lucide-react";
+import Stepper from "@mui/material/Stepper";
+import Step from "@mui/material/Step";
+import StepLabel from "@mui/material/StepLabel";
 
 import { BoltStyleChat } from "@/components/ui/BoltStyleChat";
 import SiteFooter from "@/components/ui/SiteFooter";
@@ -429,14 +432,14 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="theme-input-label mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-zinc-500">
+      <span className="theme-input-label mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-zinc-500 dark:text-zinc-400">
         {label}
       </span>
       <input
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="theme-input-field w-full rounded-xl border border-white/10 bg-[#0a1016] px-4 py-3 text-base text-white focus:outline-none"
+        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-white/10 dark:bg-[#0a1016] dark:text-white"
       />
     </label>
   );
@@ -457,13 +460,13 @@ function SelectField({
 }) {
   return (
     <label className="block">
-      <span className="theme-input-label mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-zinc-500">
+      <span className="theme-input-label mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-zinc-500 dark:text-zinc-400">
         {label}
       </span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="theme-input-field w-full rounded-xl border border-white/10 bg-[#0a1016] px-4 py-3 text-base text-white focus:outline-none"
+        className="w-full appearance-none rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-white/10 dark:bg-[#0a1016] dark:text-white"
       >
         <option value="">{placeholder}</option>
         {options.map((option) => (
@@ -486,13 +489,13 @@ function EntityList({
   emptyLabel: string;
 }) {
   return (
-    <details className="theme-item-surface rounded-[18px] border border-white/8 bg-[#091017] p-4">
+    <details className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 dark:border-white/8 dark:bg-[#091017]">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
         <div>
-          <p className="theme-faint-text text-xs font-semibold uppercase tracking-[0.08em] text-zinc-500">
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-zinc-500">
             {title}
           </p>
-          <p className="theme-section-copy mt-1 text-sm text-zinc-400">
+          <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
             {items.length > 0 ? `${items.length} saved` : emptyLabel}
           </p>
         </div>
@@ -516,25 +519,7 @@ function EntityList({
   );
 }
 
-function WorkspaceCard({
-  title,
-  subtitle,
-  children,
-}: {
-  title: string;
-  subtitle: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="theme-item-surface rounded-[20px] border border-white/8 bg-[#091017] p-4">
-      <div className="theme-gridline border-b border-white/8 pb-3">
-        <h4 className="theme-section-title text-lg font-semibold text-white">{title}</h4>
-        <p className="theme-section-copy mt-1 text-base text-zinc-400">{subtitle}</p>
-      </div>
-      <div className="mt-4 space-y-4">{children}</div>
-    </div>
-  );
-}
+// WorkspaceCard removed — replaced by MUI Stepper below
 
 export default function AnalystDashboardPage() {
   const [setupMode, setSetupMode] = React.useState<IngestionSource["type"]>("ai_application");
@@ -1476,13 +1461,13 @@ export default function AnalystDashboardPage() {
           </div>
 
           <div className="mt-6">
-            <div className="theme-panel relative rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,#0a1218_0%,#080c12_100%)] p-5">
-              <div className="theme-gridline mb-4 flex items-center justify-between border-b border-white/8 pb-4">
+            <div className="theme-panel relative rounded-[24px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-white/8 dark:bg-[linear-gradient(180deg,#0a1218_0%,#080c12_100%)]">
+              <div className="theme-gridline mb-4 flex items-center justify-between border-b border-zinc-100 pb-4 dark:border-white/8">
                 <div>
-                  <h3 className="theme-section-title text-xl font-semibold text-white">
+                  <h3 className="theme-section-title text-xl font-semibold text-zinc-900 dark:text-white">
                     Workspace onboarding
                   </h3>
-                  <p className="theme-section-copy mt-1 text-base text-zinc-400">
+                  <p className="theme-section-copy mt-1 text-base text-zinc-500 dark:text-zinc-400">
                     These objects are stored in FastAPI and PostgreSQL, so they are ready for the
                     next ingestion and integrity steps.
                   </p>
@@ -1490,162 +1475,219 @@ export default function AnalystDashboardPage() {
                 {loading ? <LoaderCircle className="h-5 w-5 animate-spin text-sky-300" /> : <ShieldCheck className="h-5 w-5 text-sky-300" />}
               </div>
 
-              <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
-                <WorkspaceCard
-                  title="Organization"
-                  subtitle="Choose an existing organization from the dropdown, or create a new one below."
-                >
-                  <SelectField
-                    label="Existing Organization"
-                    value={selectedOrganizationId}
-                    onChange={setSelectedOrganizationId}
-                    options={organizationOptions}
-                    placeholder="Choose an organization"
-                  />
-                  <Field
-                    label="New Organization Name"
-                    value={organizationName}
-                    onChange={setOrganizationName}
-                    placeholder="SmartSupport AI"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => void handleCreateOrganization()}
-                    disabled={submittingAction === "organization"}
-                    className="theme-primary-button inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-base font-semibold text-black transition-colors hover:bg-zinc-200"
-                  >
-                    {submittingAction === "organization" ? <LoaderCircle size={16} className="animate-spin" /> : null}
-                    Create organization
-                  </button>
-                  <EntityList
-                    title="Saved organizations"
-                    items={organizations.map((organization) => organization.name)}
-                    emptyLabel="No organizations yet."
-                  />
-                </WorkspaceCard>
+              {/* Horizontal stepper */}
+              <Stepper
+                activeStep={selectedOrganizationId ? (selectedProjectId ? 2 : 1) : 0}
+                sx={{
+                  mb: 4,
+                  "& .MuiStepLabel-root .Mui-completed": { color: "#2563eb" },
+                  "& .MuiStepLabel-root .Mui-active": { color: "#2563eb" },
+                  "& .MuiStepIcon-root.Mui-active": { color: "#2563eb" },
+                  "& .MuiStepIcon-root.Mui-completed": { color: "#2563eb" },
+                  "& .MuiStepConnector-line": { borderColor: "#cbd5e1" },
+                }}
+              >
+                <Step><StepLabel>Organization</StepLabel></Step>
+                <Step><StepLabel>Project</StepLabel></Step>
+                <Step><StepLabel>{setupMode === "ai_application" ? "AI Application Source" : "System Logs Source"}</StepLabel></Step>
+              </Stepper>
 
-                <WorkspaceCard
-                  title="Project"
-                  subtitle="Projects depend on the selected organization. Pick an existing project or create a new one."
-                >
-                  <SelectField
-                    label="Existing Project"
-                    value={selectedProjectId}
-                    onChange={setSelectedProjectId}
-                    options={projectOptions}
-                    placeholder="Choose a project"
-                  />
-                  <Field
-                    label="New Project Name"
-                    value={projectName}
-                    onChange={setProjectName}
-                    placeholder="Customer Support Bot"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => void handleCreateProject()}
-                    disabled={submittingAction === "project"}
-                    className="theme-primary-button inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-base font-semibold text-black transition-colors hover:bg-zinc-200"
-                  >
-                    {submittingAction === "project" ? <LoaderCircle size={16} className="animate-spin" /> : null}
-                    Create project
-                  </button>
-                  <EntityList
-                    title="Saved projects"
-                    items={projectsForSelectedOrganization.map((project) => project.name)}
-                    emptyLabel="No projects in this organization yet."
-                  />
-                </WorkspaceCard>
+              {/* Step content panel */}
+              <div className="grid gap-6 lg:grid-cols-2">
+                <div className="space-y-4">
+                  {/* Step 1 content */}
+                  {!selectedOrganizationId && (
+                    <>
+                      <p className="text-sm text-zinc-500">Choose an existing organization or create a new one.</p>
+                      <SelectField
+                        label="Existing Organization"
+                        value={selectedOrganizationId}
+                        onChange={setSelectedOrganizationId}
+                        options={organizationOptions}
+                        placeholder="Choose an organization"
+                      />
+                      <Field
+                        label="New Organization Name"
+                        value={organizationName}
+                        onChange={setOrganizationName}
+                        placeholder="e.g. CyberGuard Inc."
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void handleCreateOrganization()}
+                        disabled={submittingAction === "organization"}
+                        className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+                      >
+                        {submittingAction === "organization" ? <LoaderCircle size={14} className="animate-spin" /> : null}
+                        Create Organization
+                      </button>
+                    </>
+                  )}
 
-                <WorkspaceCard
-                  title={setupMode === "ai_application" ? "AI Application Source" : "System Logs Source"}
-                  subtitle="Choose an existing source from the selected project, or create a new source below."
-                >
-                  <SelectField
-                    label="Existing Source"
-                    value={selectedSourceId}
-                    onChange={setSelectedSourceId}
-                    options={sourceOptions}
-                    placeholder="Choose a source"
-                  />
-                  <Field
-                    label="New Source Name"
-                    value={sourceName}
-                    onChange={setSourceName}
-                    placeholder={setupMode === "ai_application" ? "GPT Support Pipeline" : "Auth Service Logs"}
-                  />
-                  <SelectField
-                    label="Status"
-                    value={statusValue}
-                    onChange={(value) => setStatusValue(value as IngestionSource["status"])}
-                    options={[
-                      { value: "ready", label: "Ready" },
-                      { value: "connected", label: "Connected" },
-                      { value: "paused", label: "Paused" },
-                    ]}
-                    placeholder="Choose a status"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => void handleCreateSource()}
-                    disabled={submittingAction === "source"}
-                    className="theme-primary-button inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-base font-semibold text-black transition-colors hover:bg-zinc-200"
-                  >
-                    {submittingAction === "source" ? <LoaderCircle size={16} className="animate-spin" /> : null}
-                    Save source
-                    <ChevronRight size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void loadWorkspace()}
-                    disabled={loading}
-                    className="theme-muted-button inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-5 py-3 text-base font-semibold text-zinc-200 transition-colors hover:bg-white/[0.06]"
-                  >
-                    <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-                    Refresh workspace
-                  </button>
-                  <EntityList
-                    title="Saved sources"
-                    items={projectSources.map((source) => `${source.name} · ${source.type}`)}
-                    emptyLabel="No sources in this project yet."
-                  />
-                  {latestSourceKey ? (
-                    <div className="rounded-[18px] border border-emerald-500/20 bg-emerald-500/8 p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-emerald-300">
-                            Ingestion API Key
-                          </p>
-                          <p className="mt-1 text-base text-zinc-200">
-                            Save this key for <span className="font-semibold text-white">{latestSourceKey.sourceName}</span>. It is only shown in full right after creation or rotation.
-                          </p>
-                        </div>
-                        <KeyRound className="mt-1 h-5 w-5 text-emerald-300" />
-                      </div>
-                      <div className="mt-3 rounded-xl border border-white/8 bg-[#091017] px-3 py-3 font-mono text-sm text-emerald-200">
-                        {latestSourceKey.plainApiKey}
-                      </div>
-                      <div className="mt-3 flex flex-wrap gap-3">
+                  {/* Step 2 content */}
+                  {selectedOrganizationId && !selectedProjectId && (
+                    <>
+                      <p className="text-sm text-zinc-500">Pick an existing project or create a new one under <span className="font-medium text-zinc-800">{selectedOrganizationName}</span>.</p>
+                      <SelectField
+                        label="Existing Project"
+                        value={selectedProjectId}
+                        onChange={setSelectedProjectId}
+                        options={projectOptions}
+                        placeholder="Choose a project"
+                      />
+                      <Field
+                        label="New Project Name"
+                        value={projectName}
+                        onChange={setProjectName}
+                        placeholder="e.g. Q3 Security Audit"
+                      />
+                      <div className="flex gap-2">
                         <button
                           type="button"
-                          onClick={() => void handleCopyLatestSourceKey()}
-                          className="theme-primary-button inline-flex items-center justify-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-zinc-200"
+                          onClick={() => void handleCreateProject()}
+                          disabled={submittingAction === "project"}
+                          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
                         >
-                          <Copy size={14} />
-                          Copy key
+                          {submittingAction === "project" ? <LoaderCircle size={14} className="animate-spin" /> : null}
+                          Create Project
                         </button>
                         <button
                           type="button"
-                          onClick={() => setLatestSourceKey(null)}
-                          className="theme-muted-button inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-semibold text-zinc-200 transition-colors hover:bg-white/[0.06]"
+                          onClick={() => setSelectedOrganizationId("")}
+                          className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-600 transition-colors hover:bg-zinc-50"
                         >
+                          Back
+                        </button>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Step 3 content */}
+                  {selectedOrganizationId && selectedProjectId && (
+                    <>
+                      <p className="text-sm text-zinc-500">Register a source for <span className="font-medium text-zinc-800">{selectedProjectName}</span>.</p>
+                      <SelectField
+                        label="Existing Source"
+                        value={selectedSourceId}
+                        onChange={setSelectedSourceId}
+                        options={sourceOptions}
+                        placeholder="Choose a source"
+                      />
+                      <Field
+                        label="New Source Name"
+                        value={sourceName}
+                        onChange={setSourceName}
+                        placeholder={setupMode === "ai_application" ? "GPT Support Pipeline" : "Auth Service Logs"}
+                      />
+                      <SelectField
+                        label="Status"
+                        value={statusValue}
+                        onChange={(value) => setStatusValue(value as IngestionSource["status"])}
+                        options={[
+                          { value: "ready", label: "Ready" },
+                          { value: "connected", label: "Connected" },
+                          { value: "paused", label: "Paused" },
+                        ]}
+                        placeholder="Choose a status"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void handleCreateSource()}
+                          disabled={submittingAction === "source"}
+                          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+                        >
+                          {submittingAction === "source" ? <LoaderCircle size={14} className="animate-spin" /> : null}
+                          Save Source
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void loadWorkspace()}
+                          disabled={loading}
+                          className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-600 transition-colors hover:bg-zinc-50 disabled:opacity-60"
+                        >
+                          <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+                          Refresh
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedProjectId("")}
+                          className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-600 transition-colors hover:bg-zinc-50"
+                        >
+                          Back
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Right panel — saved items summary */}
+                <div className="space-y-3">
+                  {organizations.length > 0 && (
+                    <EntityList
+                      title="Saved organizations"
+                      items={organizations.map((o) => o.name)}
+                      emptyLabel="No organizations yet."
+                    />
+                  )}
+                  {projectsForSelectedOrganization.length > 0 && (
+                    <EntityList
+                      title="Saved projects"
+                      items={projectsForSelectedOrganization.map((p) => p.name)}
+                      emptyLabel="No projects in this organization yet."
+                    />
+                  )}
+                  {projectSources.length > 0 && (
+                    <EntityList
+                      title="Saved sources"
+                      items={projectSources.map((s) => `${s.name} · ${s.type}`)}
+                      emptyLabel="No sources in this project yet."
+                    />
+                  )}
+                  {organizations.length === 0 && (
+                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-500">
+                      <p className="font-semibold text-zinc-700">Configure in 3 steps</p>
+                      <ol className="mt-2 space-y-1 list-decimal list-inside">
+                        <li>Create or select an <span className="font-medium text-zinc-800">Organization</span></li>
+                        <li>Create or select a <span className="font-medium text-zinc-800">Project</span></li>
+                        <li>Register an <span className="font-medium text-zinc-800">Ingestion Source</span></li>
+                      </ol>
+                      <p className="mt-3 text-xs text-zinc-400">Objects are stored in FastAPI + PostgreSQL and ready for ingestion.</p>
+                    </div>
+                  )}
+                  {latestSourceKey ? (
+                    <div className="rounded-[18px] border border-emerald-200 bg-emerald-50 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-emerald-700">Ingestion API Key</p>
+                          <p className="mt-1 text-sm text-zinc-700">
+                            Save this key for <span className="font-semibold text-zinc-900">{latestSourceKey.sourceName}</span>. It is only shown once.
+                          </p>
+                        </div>
+                        <KeyRound className="mt-1 h-5 w-5 text-emerald-600" />
+                      </div>
+                      <div className="mt-3 rounded-xl border border-emerald-200 bg-white px-3 py-3 font-mono text-sm text-emerald-800">
+                        {latestSourceKey.plainApiKey}
+                      </div>
+                      <div className="mt-3 flex gap-3">
+                        <button type="button" onClick={() => void handleCopyLatestSourceKey()} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+                          <Copy size={14} /> Copy key
+                        </button>
+                        <button type="button" onClick={() => setLatestSourceKey(null)} className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50">
                           Hide key
                         </button>
                       </div>
                     </div>
                   ) : null}
-                </WorkspaceCard>
+                </div>
               </div>
+
+              <p className="mt-4 text-sm text-zinc-500">
+                Need help with your configuration?{" "}
+                <a href="/docs" className="text-blue-500 underline underline-offset-2 hover:text-blue-600">
+                  View Documentation
+                </a>
+              </p>
 
               {(errorMessage || successMessage) ? (
                 <div className="pointer-events-none absolute right-4 top-4 z-20 max-w-sm">
