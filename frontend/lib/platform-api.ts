@@ -1,6 +1,7 @@
 import { getAuthToken } from "@/lib/auth";
 
 const platformApiUrl = import.meta.env.VITE_CHAT_API_URL ?? "http://localhost:8000";
+// Note: organizations/projects/sources APIs are served by the chat backend (FastAPI on port 8000)
 
 export type Organization = {
   id: string;

@@ -1386,10 +1386,11 @@ function ChatbotLauncher() {
 }
 
 export default function SaaSTemplate() {
+  const { theme } = useTheme();
   return (
     <main className="theme-surface min-h-screen bg-black text-white">
       <SiteHeader homeMode />
-      <Hero />
+      <Hero key={theme} />
       <PlatformWorkflowSection />
       <TestimonialsRadarSection />
       <SiteFooter />
