@@ -294,10 +294,15 @@ a {
   box-shadow: none !important;
 }
 
-:root[data-theme="light"] .theme-root .theme-components-shell,
+:root[data-theme="light"] .theme-root .theme-components-shell {
+  background: linear-gradient(180deg, #021213 0%, #020607 100%) !important;
+  border-color: #264242 !important;
+  box-shadow: 0 24px 100px rgba(0,0,0,0.3) !important;
+}
+
 :root[data-theme="light"] .theme-root .theme-components-inner {
-  background: #dfe8e8 !important;
-  border-color: var(--theme-border) !important;
+  background: linear-gradient(180deg, #031011 0%, #020607 100%) !important;
+  border-color: #163334 !important;
   box-shadow: none !important;
 }
 
@@ -307,16 +312,16 @@ a {
 }
 
 :root[data-theme="light"] .theme-root .theme-components-rail {
-  background: rgba(34, 34, 34, 0.12) !important;
+  background: rgba(255, 255, 255, 0.10) !important;
 }
 
 :root[data-theme="light"] .theme-root .theme-components-rail-thumb {
-  background: rgba(34, 34, 34, 0.28) !important;
+  background: rgba(255, 255, 255, 0.70) !important;
 }
 
 :root[data-theme="light"] .theme-root .theme-components-heading,
 :root[data-theme="light"] .theme-root .theme-components-chrome {
-  color: var(--theme-text) !important;
+  color: #f4f1e8 !important;
 }
 
 :root[data-theme="light"] .theme-root .theme-panel .theme-section-title {
