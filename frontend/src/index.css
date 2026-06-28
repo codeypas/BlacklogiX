@@ -320,75 +320,95 @@ a {
 }
 
 :root[data-theme="light"] .theme-root .theme-components-heading,
-:root[data-theme="light"] .theme-root .theme-components-chrome {
+:root[data-theme="light"] .theme-root .theme-components-heading *,
+:root[data-theme="light"] .theme-root .theme-components-chrome,
+:root[data-theme="light"] .theme-root .theme-components-chrome * {
   color: #f4f1e8 !important;
 }
 
-:root[data-theme="light"] .theme-root .theme-panel .theme-section-title {
+/* Force everything inside the dashboard preview to keep its original dark-theme styles */
+:root[data-theme="light"] .theme-root #components .theme-section-title { color: #cfe4de !important; }
+:root[data-theme="light"] .theme-root #components .theme-section-copy { color: #4f8e91 !important; }
+:root[data-theme="light"] .theme-root #components .theme-faint-text { color: #6b7280 !important; }
+:root[data-theme="light"] .theme-root #components [class*="text-white"] { color: #ffffff !important; }
+:root[data-theme="light"] .theme-root #components [class*="text-zinc-300"] { color: #d1d5db !important; }
+:root[data-theme="light"] .theme-root #components [class*="text-zinc-400"] { color: #9ca3af !important; }
+:root[data-theme="light"] .theme-root #components [class*="text-zinc-500"] { color: #6b7280 !important; }
+:root[data-theme="light"] .theme-root #components .theme-gridline { border-color: #0d2021 !important; }
+
+/* Protect inner panel backgrounds inside dashboard preview */
+:root[data-theme="light"] .theme-root #components .theme-panel {
+  background: linear-gradient(180deg, #041314 0%, #030a0b 100%) !important;
+  border-color: #102627 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.02) !important;
+}
+:root[data-theme="light"] .theme-root #components .theme-card-surface {
+  background: #051011 !important;
+  border-color: #103133 !important;
+}
+:root[data-theme="light"] .theme-root #components .theme-item-surface {
+  background: #051011 !important;
+  border-color: #103133 !important;
+}
+
+/* Exclude #components (dashboard preview) from all light-mode overrides */
+:root[data-theme="light"] .theme-root .theme-panel .theme-section-title:not(#components .theme-section-title) {
   color: var(--theme-text) !important;
 }
 
-:root[data-theme="light"] .theme-root .theme-panel .theme-section-copy {
+:root[data-theme="light"] .theme-root .theme-panel .theme-section-copy:not(#components .theme-section-copy) {
   color: var(--theme-text-muted) !important;
 }
 
-:root[data-theme="light"] .theme-root .theme-gridline {
+:root[data-theme="light"] .theme-root .theme-gridline:not(#components .theme-gridline) {
   border-color: var(--theme-border) !important;
 }
 
-:root[data-theme="light"] .theme-root .theme-card-surface,
-:root[data-theme="light"] .theme-root .theme-input-surface,
-:root[data-theme="light"] .theme-root .theme-item-surface,
-:root[data-theme="light"] .theme-root .theme-input-field {
+:root[data-theme="light"] .theme-root .theme-card-surface:not(#components .theme-card-surface),
+:root[data-theme="light"] .theme-root .theme-input-surface:not(#components .theme-input-surface),
+:root[data-theme="light"] .theme-root .theme-item-surface:not(#components .theme-item-surface),
+:root[data-theme="light"] .theme-root .theme-input-field:not(#components .theme-input-field) {
   background: #dfe8e8 !important;
   border-color: var(--theme-border) !important;
   box-shadow: none !important;
 }
 
-:root[data-theme="light"] .theme-root .theme-input-surface,
-:root[data-theme="light"] .theme-root .theme-input-field {
-  background: #dfe8e8 !important;
-}
-
-:root[data-theme="light"] .theme-root .theme-input-surface:focus-within,
-:root[data-theme="light"] .theme-root .theme-input-field:focus {
+:root[data-theme="light"] .theme-root .theme-input-surface:not(#components .theme-input-surface):focus-within,
+:root[data-theme="light"] .theme-root .theme-input-field:not(#components .theme-input-field):focus {
   border-color: var(--theme-accent) !important;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
 }
 
-:root[data-theme="light"] .theme-root .theme-input-field,
-:root[data-theme="light"] .theme-root .theme-input-control {
+:root[data-theme="light"] .theme-root .theme-input-field:not(#components .theme-input-field),
+:root[data-theme="light"] .theme-root .theme-input-control:not(#components .theme-input-control) {
   color: var(--theme-text) !important;
   caret-color: var(--theme-text) !important;
 }
 
-:root[data-theme="light"] .theme-root .theme-panel .theme-card-surface [class*="text-white"],
-:root[data-theme="light"] .theme-root .theme-panel .theme-input-surface [class*="text-white"],
-:root[data-theme="light"] .theme-root .theme-item-surface [class*="text-white"],
-:root[data-theme="light"] .theme-root .theme-card-surface .theme-input-control,
-:root[data-theme="light"] .theme-root .theme-input-surface .theme-input-control {
+:root[data-theme="light"] .theme-root .theme-panel .theme-card-surface:not(#components .theme-card-surface) [class*="text-white"],
+:root[data-theme="light"] .theme-root .theme-panel .theme-input-surface:not(#components .theme-input-surface) [class*="text-white"],
+:root[data-theme="light"] .theme-root .theme-item-surface:not(#components .theme-item-surface) [class*="text-white"],
+:root[data-theme="light"] .theme-root .theme-card-surface:not(#components .theme-card-surface) .theme-input-control,
+:root[data-theme="light"] .theme-root .theme-input-surface:not(#components .theme-input-surface) .theme-input-control {
   color: var(--theme-text) !important;
 }
 
-:root[data-theme="light"] .theme-root .theme-panel .theme-card-surface [class*="text-zinc-300"],
-:root[data-theme="light"] .theme-root .theme-panel .theme-card-surface [class*="text-zinc-400"],
-:root[data-theme="light"] .theme-root .theme-panel .theme-card-surface [class*="text-zinc-500"],
-:root[data-theme="light"] .theme-root .theme-panel .theme-input-surface [class*="text-zinc-300"],
-:root[data-theme="light"] .theme-root .theme-panel .theme-input-surface [class*="text-zinc-400"],
-:root[data-theme="light"] .theme-root .theme-panel .theme-input-surface [class*="text-zinc-500"],
-:root[data-theme="light"] .theme-root .theme-item-surface [class*="text-zinc-300"],
-:root[data-theme="light"] .theme-root .theme-item-surface [class*="text-zinc-400"],
-:root[data-theme="light"] .theme-root .theme-item-surface [class*="text-zinc-500"] {
+:root[data-theme="light"] .theme-root .theme-panel .theme-card-surface:not(#components .theme-card-surface) [class*="text-zinc-300"],
+:root[data-theme="light"] .theme-root .theme-panel .theme-card-surface:not(#components .theme-card-surface) [class*="text-zinc-400"],
+:root[data-theme="light"] .theme-root .theme-panel .theme-card-surface:not(#components .theme-card-surface) [class*="text-zinc-500"],
+:root[data-theme="light"] .theme-root .theme-item-surface:not(#components .theme-item-surface) [class*="text-zinc-300"],
+:root[data-theme="light"] .theme-root .theme-item-surface:not(#components .theme-item-surface) [class*="text-zinc-400"],
+:root[data-theme="light"] .theme-root .theme-item-surface:not(#components .theme-item-surface) [class*="text-zinc-500"] {
   color: var(--theme-text-muted) !important;
 }
 
-:root[data-theme="light"] .theme-root .theme-input-label,
-:root[data-theme="light"] .theme-root .theme-faint-text {
+:root[data-theme="light"] .theme-root .theme-input-label:not(#components .theme-input-label),
+:root[data-theme="light"] .theme-root .theme-faint-text:not(#components .theme-faint-text) {
   color: var(--theme-text-faint) !important;
 }
 
-:root[data-theme="light"] .theme-root .theme-input-control::placeholder,
-:root[data-theme="light"] .theme-root .theme-input-field::placeholder {
+:root[data-theme="light"] .theme-root .theme-input-control:not(#components .theme-input-control)::placeholder,
+:root[data-theme="light"] .theme-root .theme-input-field:not(#components .theme-input-field)::placeholder {
   color: var(--theme-text-faint) !important;
 }
 
