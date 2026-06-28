@@ -1,317 +1,406 @@
 # BlackLogix
 
-BlackLogix is a security analytics platform prototype focused on tamper-resistant log evidence, analyst workflows, and future blockchain-backed integrity proofing.
+BlackLogix is a security analytics and AI telemetry platform prototype focused on:
 
-This repository currently includes:
+- structured AI and system event ingestion
+- tamper-resistant SHA-256 evidence chaining
+- analyst investigation workflows
+- alerting and anomaly detection
+- compliance-style reporting
+- SDK-based pilot integration
 
-- A React + Vite frontend with a landing page, pricing page, analyst auth screens, and analyst dashboard UI
-- A Node.js + Express backend with health, analyst auth, and log source endpoints
-- A new isolated FastAPI chat backend in `chat-backend/` for Gemini-powered chat
-- A PostgreSQL schema for analysts and log sources
-- Docker Compose setup for local backend + database development
+The project is designed to help teams collect trustable AI evidence, verify its integrity,
+investigate risky behavior, and preserve an auditable event trail.
 
-## Current Progress
+## What BlackLogix Does
 
-Implemented so far:
+At a high level, the current prototype supports this flow:
 
-- Marketing-style product homepage for the BlockLogix concept
-- Pricing page with pilot, team, and enterprise plans
-- Analyst login and registration UI flows
-- Google Sign-In flow from the frontend to the backend with PostgreSQL analyst upsert
-- Analyst dashboard UI with source setup panels, alert views, and metrics
-- Backend API routes for:
-  - `GET /api/health`
-  - `POST /api/auth/register`
-  - `POST /api/auth/login`
-  - `POST /api/auth/google`
-  - `GET /api/log-sources`
-  - `POST /api/log-sources`
-- PostgreSQL bootstrap SQL for:
-  - `analysts`
-  - `log_sources`
-- Seeded sample log source record
-- Dockerized Postgres + backend startup
+Customer application or service  
+→ SDK or source API key  
+→ FastAPI ingestion API  
+→ SHA-256 hashing and source-level chain linking  
+→ PostgreSQL event storage  
+→ anomaly and alert evaluation  
+→ dashboard, replay, integrity verification, and reporting
 
-Still not wired end-to-end:
+The current implementation is best suited for:
 
-- Dashboard metrics, alerts, and evidence data are currently static demo content
-- No blockchain integration yet beyond product positioning and UI copy
-- No migrations framework or automated test suite yet
+- AI startups
+- AI SaaS products
+- enterprise AI applications
+- structured application and service telemetry pilots
+
+## Current Architecture
+
+### Primary platform
+
+- `frontend/`
+  - React + Vite analyst dashboard and product UI
+- `chat-backend/`
+  - FastAPI platform backend
+  - PostgreSQL storage
+  - ingestion, integrity, alerts, reporting, chat copilot
+- `sdk/python/blacklogix-agent/`
+  - Python ingestion SDK
+- `sdk/node/blacklogix-agent/`
+  - Node.js ingestion SDK
+
+### Secondary / legacy service still in the repo
+
+- `backend/`
+  - older Node.js + Express service
+  - still present in the repository
+  - not the main implementation for the current monitoring platform
 
 ## Tech Stack
 
-- Frontend: React 19, TypeScript, Vite, Tailwind CSS 4, Framer Motion
-- Backend: Node.js, Express, TypeScript, Zod, PostgreSQL, `pg`, `bcryptjs`, Google Auth Library, JWT
-- Database: PostgreSQL 16
-- Local infra: Docker Compose
+### Frontend
 
-## Prerequisites
+- React 19
+- TypeScript
+- Vite
+- Tailwind CSS 4
+- Framer Motion
+- Lucide React
 
-- Node.js 20.19+ recommended
-- npm
-- Docker Desktop or Docker Engine
+### Primary backend
 
-## Project Structure
+- FastAPI
+- SQLAlchemy 2
+- PostgreSQL
+- Psycopg 3
+- JWT authentication
+- Google auth verification
+- LangChain
+- Gemini integration
+
+### Secondary backend
+
+- Node.js
+- Express
+- TypeScript
+- PostgreSQL
+- JWT
+- Google auth
+- Zod
+
+### Integration
+
+- Python SDK
+- Node SDK
+- direct API ingestion
+
+### Local infrastructure
+
+- Docker Compose
+
+## Implemented Features
+
+### Workspace and tenancy
+
+- organization setup
+- project setup
+- ingestion source setup
+- source API key generation and rotation
+
+### Ingestion
+
+- AI event ingestion API
+- system log ingestion API
+- bulk ingestion API
+- dashboard-based test ingestion
+- Python SDK ingestion
+- Node SDK ingestion
+
+### Integrity and trust
+
+- SHA-256 raw hashing
+- previous-hash chain logic
+- chain hash storage
+- project integrity summary
+- source verification
+- legacy hash backfill
+- clearer integrity status UX:
+  - no chain yet
+  - verified
+  - backfill required
+  - mismatch detected
+
+### Detection and investigation
+
+- rule-based risk detections
+- recent-history anomaly heuristics
+- background-style alert evaluation
+- alert list and detail views
+- acknowledge / resolve workflow
+- event explorer
+- incident replay
+- project-aware analyst copilot
+
+### Reporting
+
+- compliance-style report generation
+- JSON copy
+- CSV export
+- backend-generated PDF export
+
+### Pilot readiness
+
+- source-specific onboarding examples in the dashboard
+- shared pilot integration guide
+- realistic Python and Node SDK examples
+
+## What Is Working Today
+
+You can already do this end to end:
+
+1. Create an organization, project, and source in the dashboard.
+2. Copy the source API key.
+3. Send AI or system events from the SDK or direct API.
+4. Watch those events appear in the dashboard.
+5. Verify the SHA-256 chain for the source.
+6. Backfill older legacy rows if needed.
+7. Trigger alerts with risky events.
+8. Replay event details and inspect integrity fields.
+9. Generate CSV or PDF compliance-style reports.
+
+## What Is Not Fully Done Yet
+
+The project is a strong prototype, but not yet a full production platform.
+
+Still remaining:
+
+- system-log pilot flow polish
+- stronger pipeline hardening
+  - retries
+  - batching
+  - worker separation
+  - failure handling
+- Redis or queue enforcement as the real processing path
+- stronger search/index strategy if scale requires it
+- SDK packaging and publishing polish
+- broader raw infrastructure log collectors
+- ML-based anomaly scoring
+
+## Repository Structure
 
 ```text
 BlackLogix/
-├── chat-backend/
+├── backend/                         # older Node/Express service
+├── chat-backend/                    # primary FastAPI platform backend
 │   ├── app/
 │   ├── .env.example
 │   ├── Dockerfile
 │   ├── docker-compose.yml
 │   └── requirements.txt
-├── backend/
-│   ├── src/
-│   │   ├── config/
-│   │   ├── routes/
-│   │   ├── app.ts
-│   │   ├── db.ts
-│   │   └── index.ts
-│   ├── .env.example
-│   ├── Dockerfile
-│   └── package.json
 ├── database/
 │   └── init/
-│       └── 001-init.sql
+├── docs/
+│   └── pilot-integration-guide.md
 ├── frontend/
 │   ├── components/
 │   ├── lib/
 │   ├── src/
 │   └── package.json
-├── docker-compose.yml
+├── sdk/
+│   ├── python/
+│   │   └── blacklogix-agent/
+│   └── node/
+│       └── blacklogix-agent/
 └── README.md
 ```
 
-## Local Development
+## Getting Started
 
-### 1. Install dependencies
+### Prerequisites
 
-Frontend:
+- Node.js 20.19+ recommended
+- npm
+- Python 3.11+
+- Docker Desktop or Docker Engine
+
+## Run the Frontend
 
 ```bash
 cd frontend
 npm install
+npm run dev
 ```
 
-Backend:
+Frontend URL:
+
+- `http://localhost:5173`
+
+## Run the FastAPI Platform Backend
 
 ```bash
-cd backend
-npm install
+cd chat-backend
+cp .env.example .env
+docker compose up --build
 ```
 
-### 2. Create the backend environment file
+Fill `chat-backend/.env` with:
 
-From the project root:
+- `GOOGLE_CLIENT_ID`
+- `JWT_SECRET`
+- `GEMINI_API_KEY`
+- `GEMINI_MODEL`
+
+Backend URL:
+
+- `http://localhost:8000`
+
+Health check:
 
 ```bash
-cp backend/.env.example backend/.env
+curl http://localhost:8000/health
 ```
 
-### 3. Create the frontend environment file
+## Frontend Environment
 
-From the project root:
+Create:
 
 ```bash
 cp frontend/.env.example frontend/.env
 ```
 
-Fill in:
-
-- `VITE_API_URL=http://localhost:4000`
-- `VITE_GOOGLE_CLIENT_ID=your-google-web-client-id.apps.googleusercontent.com`
-- `VITE_CHAT_API_URL=http://localhost:8000`
-
-### 3. Create the chat backend environment file
-
-From the project root:
-
-```bash
-cp chat-backend/.env.example chat-backend/.env
-```
-
-Fill in:
-
-- `GOOGLE_CLIENT_ID`
-- `JWT_SECRET`
-- `GEMINI_API_KEY`
-
-### 4. Run the frontend
-
-```bash
-cd frontend
-npm run dev
-```
-
-Frontend default URL:
-
-- `http://localhost:5173`
-
-### 4. Run backend + Postgres with Docker
-
-From the project root:
-
-```bash
-docker compose up --build
-```
-
-This starts:
-
-- PostgreSQL on `localhost:5432`
-- Backend API on `http://localhost:4000`
-
-### 5. Run Postgres in Docker and backend locally
-
-Start Postgres:
-
-```bash
-docker compose up postgres
-```
-
-If you run the backend outside Docker, update `backend/.env` so `DATABASE_URL` uses `localhost` instead of `postgres`, for example:
+Recommended values:
 
 ```env
-DATABASE_URL=postgresql://blacklogix:blacklogix@localhost:5432/blacklogix
+VITE_API_URL=http://localhost:4000
+VITE_CHAT_API_URL=http://localhost:8000
+VITE_GOOGLE_CLIENT_ID=your-google-web-client-id.apps.googleusercontent.com
 ```
 
-Then run the backend:
+## Main Pilot Flow
+
+### For a customer or pilot client
+
+1. Open the dashboard.
+2. Create or select:
+   - organization
+   - project
+   - source
+3. Copy:
+   - `project_id`
+   - `source_id`
+   - `source API key`
+4. Choose one ingestion path:
+   - Python SDK
+   - Node SDK
+   - direct API
+5. Send AI or system events.
+6. Validate:
+   - event explorer
+   - incident replay
+   - integrity verification
+   - alerts
+   - reports
+
+### For an analyst
+
+1. Select the project and source.
+2. Review overview metrics.
+3. Open `Event explorer`.
+4. Use `Incident replay` to inspect the stored evidence.
+5. Run source verification.
+6. Backfill legacy hashes if needed.
+7. Review and resolve alerts.
+8. Generate PDF / CSV reports.
+9. Use the analyst copilot for contextual summaries.
+
+## SDKs
+
+### Python SDK
+
+Path:
+
+```text
+sdk/python/blacklogix-agent
+```
+
+Install locally:
 
 ```bash
-cd backend
-npm run dev
+pip install -e sdk/python/blacklogix-agent
 ```
 
-### 7. Run the new FastAPI chat backend
+Example:
 
 ```bash
-cd chat-backend
-docker compose up --build
+python sdk/python/blacklogix-agent/examples/send_events.py
 ```
 
-This starts:
+### Node SDK
 
-- Chat API on `http://localhost:8000`
-- Chat PostgreSQL on host port `5433`
+Path:
 
-### 6. Google Cloud setup
-
-In Google Cloud Console:
-
-1. Configure the OAuth consent screen.
-2. Create a `Web application` OAuth Client ID.
-3. Add Authorized JavaScript Origins:
-   - `http://localhost:5173`
-4. Copy the client ID into:
-   - `backend/.env` as `GOOGLE_CLIENT_ID`
-   - `frontend/.env` as `VITE_GOOGLE_CLIENT_ID`
-
-## Backend Environment Variables
-
-Current backend env file values:
-
-```env
-PORT=4000
-NODE_ENV=development
-FRONTEND_URL=http://localhost:5173
-GOOGLE_CLIENT_ID=your-google-web-client-id.apps.googleusercontent.com
-JWT_SECRET=replace-this-with-a-long-random-secret-at-least-32-chars
-DATABASE_URL=postgresql://blacklogix:blacklogix@postgres:5432/blacklogix
+```text
+sdk/node/blacklogix-agent
 ```
 
-Notes:
-
-- Use `postgres` as the database host when the backend runs inside Docker
-- Use `localhost` as the database host when the backend runs directly on your machine
-
-## API Endpoints
-
-### Health check
+Install locally:
 
 ```bash
-curl http://localhost:4000/api/health
+npm install ./sdk/node/blacklogix-agent
 ```
 
-### Register analyst
+Example:
 
 ```bash
-curl -X POST http://localhost:4000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Ava Thompson",
-    "email": "ava@example.com",
-    "organization": "Northstar Financial",
-    "password": "StrongPass123"
-  }'
+node sdk/node/blacklogix-agent/examples/send-events.mjs
 ```
 
-### Login analyst
+## Important Docs
 
-```bash
-curl -X POST http://localhost:4000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "ava@example.com",
-    "password": "StrongPass123"
-  }'
-```
+- FastAPI backend setup:
+  - [chat-backend/README.md](chat-backend/README.md)
+- Pilot onboarding:
+  - [docs/pilot-integration-guide.md](docs/pilot-integration-guide.md)
+- Python SDK:
+  - [sdk/python/blacklogix-agent/README.md](sdk/python/blacklogix-agent/README.md)
+- Node SDK:
+  - [sdk/node/blacklogix-agent/README.md](sdk/node/blacklogix-agent/README.md)
 
-### Sign in with Google
+## Current Status
 
-```bash
-curl -X POST http://localhost:4000/api/auth/google \
-  -H "Content-Type: application/json" \
-  -d '{
-    "credential": "google-id-token-from-the-frontend"
-  }'
-```
+### Done
 
-### List log sources
+- core ingestion
+- integrity and backfill
+- alerting
+- replay
+- reporting
+- Python SDK
+- Node SDK
+- analyst dashboard
+- pilot onboarding guide
 
-```bash
-curl http://localhost:4000/api/log-sources
-```
+### In progress
 
-### Create a log source
+- moving from prototype completeness to smoother real pilot usage
+- improving system-log onboarding quality
+- hardening the real processing path
 
-```bash
-curl -X POST http://localhost:4000/api/log-sources \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "AWS CloudTrail",
-    "sourceType": "cloud_audit_trail",
-    "provider": "AWS CloudTrail",
-    "account": "prod-secops-us-east-1",
-    "credentialLabel": "cloudtrail-prod",
-    "status": "ready"
-  }'
-```
+### Remaining
 
-## Database Schema
+- production-grade pipeline hardening
+- broader collector support
+- stronger indexing/search strategy
+- ML scoring later if needed
 
-The initial SQL bootstrap creates:
+## Notes
 
-- `analysts`
-  - analyst identity, optional password storage, Google subject ID, and auth provider
-- `log_sources`
-  - server and cloud audit trail source configuration
+- PostgreSQL is the current source of truth for stored event evidence.
+- Search is still PostgreSQL-backed in the current prototype.
+- Integrity is currently implemented with SHA-256 hash chaining, not blockchain anchoring.
+- The root repo still contains an older Node backend alongside the newer FastAPI platform backend.
 
-It also seeds one sample `log_sources` row for local development.
+## Recommended Next Step
 
-## Frontend Routes
+The best next implementation step is:
 
-Current client-side routes:
+- `system-log pilot flow polish`
 
-- `/` - landing page
-- `/pricing` - pricing page
-- `/analyst-login` - login page
-- `/register` - analyst registration page
-- `/dashboard` - analyst dashboard
-
-## Recommended Next Steps
-
-- Persist log source creation from the dashboard into `/api/log-sources`
-- Add backend JWT validation middleware for protected API routes
-- Add investigations, alerts, evidence, and compliance tables
-- Add migrations and automated tests
-- Add real blockchain anchoring or verification flows if that remains part of the product direction
+That will make the non-AI customer path as smooth as the AI SDK path and improve real pilot usability further.
