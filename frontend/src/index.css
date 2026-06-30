@@ -273,8 +273,80 @@ a {
   color: var(--theme-text);
 }
 
+/* ── Dashboard shell (dark mode) ── */
+.theme-dashboard { background: #030507; }
+.theme-dashboard-sidebar {
+  background: #0d1117;
+  border-right: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 1px 0 0 rgba(255,255,255,0.04);
+}
+.theme-dashboard-topbar {
+  background: #0d1117;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.04);
+}
+.theme-dashboard-border { border-color: rgba(255,255,255,0.08); }
+.theme-dashboard-text-primary { color: #f4f4f5; }
+.theme-dashboard-text-muted { color: #71717a; }
+.theme-dashboard-nav-item { color: #71717a; }
+.theme-dashboard-nav-item:hover { background: rgba(255,255,255,0.06); color: #e4e4e7; }
+
+/* ── Dashboard shell (light mode) ── */
+:root[data-theme="light"] .theme-root .theme-dashboard { background: #eef2f3; }
+:root[data-theme="light"] .theme-root .theme-dashboard-sidebar {
+  background: #ffffff;
+  border-right: 1px solid #e2e8ec;
+  box-shadow: 1px 0 4px rgba(0,0,0,0.04);
+}
+:root[data-theme="light"] .theme-root .theme-dashboard-topbar {
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8ec;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+:root[data-theme="light"] .theme-root .theme-dashboard-border { border-color: #e2e8ec; }
+:root[data-theme="light"] .theme-root .theme-dashboard-text-primary { color: #111827; }
+:root[data-theme="light"] .theme-root .theme-dashboard-text-muted { color: #9ca3af; }
+:root[data-theme="light"] .theme-root .theme-dashboard-nav-item { color: #6b7280; }
+:root[data-theme="light"] .theme-root .theme-dashboard-nav-item:hover { background: #f3f4f6; color: #111827; }
+
 :root[data-theme="light"] .theme-root .theme-hero-bg {
   background: #dfe8e8 !important;
+}
+
+/* Dashboard page: strip hardcoded dark backgrounds so theme-* classes take effect */
+:root[data-theme="light"] .theme-root .theme-page {
+  background: #eef2f3 !important;
+  color: var(--theme-text) !important;
+}
+:root[data-theme="light"] .theme-root .theme-page .theme-panel {
+  background: #ffffff !important;
+  border-color: #c4cdd0 !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
+}
+:root[data-theme="light"] .theme-root .theme-page .theme-card-surface {
+  background: #ffffff !important;
+  border-color: #c4cdd0 !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
+}
+:root[data-theme="light"] .theme-root .theme-page .theme-item-surface {
+  background: #f8fafb !important;
+  border-color: #c4cdd0 !important;
+  box-shadow: none !important;
+}
+:root[data-theme="light"] .theme-root .theme-page .theme-gridline {
+  border-color: #e2e8ec !important;
+}
+:root[data-theme="light"] .theme-root .theme-page [class*="border-white"] {
+  border-color: #c4cdd0 !important;
+}
+:root[data-theme="light"] .theme-root .theme-page [class*="text-white"] {
+  color: var(--theme-text) !important;
+}
+:root[data-theme="light"] .theme-root .theme-page [class*="text-zinc-400"] {
+  color: #6b7280 !important;
+}
+:root[data-theme="light"] .theme-root .theme-page [class*="text-zinc-500"] {
+  color: #9ca3af !important;
 }
 
 :root[data-theme="light"] .theme-root .theme-nav {
@@ -365,11 +437,21 @@ a {
 }
 
 :root[data-theme="light"] .theme-root .theme-card-surface:not(#components .theme-card-surface),
-:root[data-theme="light"] .theme-root .theme-input-surface:not(#components .theme-input-surface),
-:root[data-theme="light"] .theme-root .theme-item-surface:not(#components .theme-item-surface),
-:root[data-theme="light"] .theme-root .theme-input-field:not(#components .theme-input-field) {
+:root[data-theme="light"] .theme-root .theme-input-surface:not(#components .theme-input-surface) {
   background: #dfe8e8 !important;
   border-color: var(--theme-border) !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="light"] .theme-root .theme-item-surface:not(#components .theme-item-surface) {
+  background: #ffffff !important;
+  border-color: #c4cdd0 !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="light"] .theme-root .theme-input-field:not(#components .theme-input-field) {
+  background: #ffffff !important;
+  border-color: #c4cdd0 !important;
   box-shadow: none !important;
 }
 

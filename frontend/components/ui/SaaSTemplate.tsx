@@ -1051,7 +1051,7 @@ const Hero = React.memo(() => {
 
         <div className="max-w-[1040px] text-center">
           <h1
-            className="text-balance text-[62px] font-medium leading-[0.98] tracking-[-0.07em] text-transparent sm:text-[82px] lg:text-[112px] xl:text-[124px]"
+            className="text-balance text-[42px] font-medium leading-[0.98] tracking-[-0.07em] text-transparent sm:text-[56px] lg:text-[72px] xl:text-[84px]"
             style={{
               background:
                 theme === "dark"
