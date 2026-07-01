@@ -4,15 +4,24 @@ import * as React from "react";
 import {
   Activity,
   AlertTriangle,
+  BarChart3,
+  Bell,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
   Cloud,
   Copy,
+  FileText,
   KeyRound,
+  LayoutDashboard,
   LoaderCircle,
+  LogOut,
+  Plus,
   RefreshCw,
   Server,
+  Settings,
   ShieldCheck,
+  ShieldAlert,
   X,
 } from "lucide-react";
 import Stepper from "@mui/material/Stepper";
@@ -20,8 +29,8 @@ import Step from "@mui/material/Step";
 import StepLabel from "@mui/material/StepLabel";
 
 import { BoltStyleChat } from "@/components/ui/BoltStyleChat";
-import SiteFooter from "@/components/ui/SiteFooter";
-import SiteHeader from "@/components/ui/SiteHeader";
+import { getAnalystSession, logout } from "@/lib/auth";
+import { navigateTo } from "@/lib/navigation";
 import {
   acknowledgeAlert,
   backfillSourceIntegrity,
@@ -344,13 +353,21 @@ function MetricCard({
   label,
   value,
   note,
+  accent = "blue",
 }: {
   label: string;
   value: string;
   note: string;
+  accent?: "blue" | "red" | "green";
 }) {
+  const accentBorder = {
+    blue: "border-t-blue-500",
+    red: "border-t-red-500",
+    green: "border-t-emerald-500",
+  }[accent];
+
   return (
-    <div className="theme-card-surface rounded-[22px] border border-white/8 bg-[linear-gradient(180deg,#0b131b_0%,#080d13_100%)] p-5">
+    <div className={`theme-card-surface rounded-[22px] border border-white/8 border-t-2 ${accentBorder} p-5`}>
       <p className="theme-faint-text text-sm font-semibold uppercase tracking-[0.08em] text-zinc-500">
         {label}
       </p>
@@ -362,7 +379,7 @@ function MetricCard({
 
 function TimelineChart() {
   return (
-    <div className="theme-panel rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,#0a1218_0%,#080c12_100%)] p-5">
+    <div className="theme-panel rounded-[24px] border border-white/8 p-5">
       <div className="theme-gridline mb-4 flex items-center justify-between gap-4 border-b border-white/8 pb-4">
         <div>
           <h3 className="theme-section-title text-xl font-semibold text-white">
@@ -376,7 +393,7 @@ function TimelineChart() {
       </div>
 
       <div className="overflow-x-auto pb-2">
-        <div className="relative h-[260px] min-w-[620px]">
+        <div className="relative h-[260px] min-w-[300px]">
           {[0, 1, 2, 3, 4].map((line) => (
             <div
               key={line}
@@ -408,7 +425,7 @@ function TimelineChart() {
             />
           </svg>
 
-          <div className="theme-faint-text mt-3 grid min-w-[620px] grid-cols-6 text-center text-xs text-zinc-500">
+          <div className="theme-faint-text mt-3 grid min-w-[300px] grid-cols-6 text-center text-xs text-zinc-500">
             {["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"].map((label) => (
               <span key={label}>{label}</span>
             ))}
@@ -432,14 +449,14 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="theme-input-label mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-zinc-500 dark:text-zinc-400">
+      <span className="theme-input-label mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-zinc-500">
         {label}
       </span>
       <input
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-white/10 dark:bg-[#0a1016] dark:text-white"
+        className="theme-input-field w-full rounded-xl border border-zinc-300 bg-[#0a1016] px-4 py-3 text-base text-white focus:outline-none focus:border-blue-500"
       />
     </label>
   );
@@ -460,21 +477,24 @@ function SelectField({
 }) {
   return (
     <label className="block">
-      <span className="theme-input-label mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-zinc-500 dark:text-zinc-400">
+      <span className="theme-input-label mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-zinc-500">
         {label}
       </span>
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="w-full appearance-none rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-white/10 dark:bg-[#0a1016] dark:text-white"
-      >
-        <option value="">{placeholder}</option>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      <div className="relative">
+        <select
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="theme-input-field w-full appearance-none rounded-xl border border-zinc-300 bg-[#0a1016] px-4 py-3 pr-10 text-base text-white focus:outline-none focus:border-blue-500"
+        >
+          <option value="">{placeholder}</option>
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+      </div>
     </label>
   );
 }
@@ -489,30 +509,30 @@ function EntityList({
   emptyLabel: string;
 }) {
   return (
-    <details className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 dark:border-white/8 dark:bg-[#091017]">
+    <details className="theme-item-surface min-w-0 rounded-[18px] border border-white/8 p-4">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-zinc-500">
+        <div className="min-w-0">
+          <p className="theme-faint-text text-xs font-semibold uppercase tracking-[0.08em] text-zinc-500">
             {title}
           </p>
-          <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="theme-section-copy mt-1 break-words text-sm text-zinc-400">
             {items.length > 0 ? `${items.length} saved` : emptyLabel}
           </p>
         </div>
-        <ChevronRight size={16} className="text-zinc-400 transition-transform group-open:rotate-90" />
+        <ChevronRight size={16} className="flex-shrink-0 text-zinc-400 transition-transform group-open:rotate-90" />
       </summary>
       <div className="mt-3 space-y-2">
         {items.length > 0 ? (
           items.map((item, index) => (
             <div
               key={`${item}-${index}`}
-              className="theme-surface-muted rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-base text-zinc-300"
+              className="theme-surface-muted break-words rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-zinc-300 sm:text-base"
             >
               {item}
             </div>
           ))
         ) : (
-          <p className="theme-section-copy text-base text-zinc-400">{emptyLabel}</p>
+          <p className="theme-section-copy break-words text-sm text-zinc-400 sm:text-base">{emptyLabel}</p>
         )}
       </div>
     </details>
@@ -523,6 +543,7 @@ function EntityList({
 
 export default function AnalystDashboardPage() {
   const [setupMode, setSetupMode] = React.useState<IngestionSource["type"]>("ai_application");
+  const [activeTab, setActiveTab] = React.useState<"overview" | "verification" | "events" | "alerts" | "reports" | "copilot" | "settings">("overview");
   const [organizations, setOrganizations] = React.useState<Organization[]>([]);
   const [projects, setProjects] = React.useState<Project[]>([]);
   const [sources, setSources] = React.useState<IngestionSource[]>([]);
@@ -631,16 +652,19 @@ export default function AnalystDashboardPage() {
           label: "Total Events",
           value: "0",
           note: "Create a project and source to begin collecting evidence.",
+          accent: "blue" as const,
         },
         {
           label: "Open Alerts",
           value: "0",
           note: "Risk detections will appear here after event ingestion.",
+          accent: "red" as const,
         },
         {
           label: "Integrity Score",
           value: "100%",
           note: "Fresh projects begin with clean integrity coverage.",
+          accent: "green" as const,
         },
       ];
     }
@@ -650,16 +674,19 @@ export default function AnalystDashboardPage() {
         label: "Total Events",
         value: overview.total_events.toLocaleString(),
         note: `${overview.ai_events.toLocaleString()} AI events and ${overview.system_events.toLocaleString()} system events`,
+        accent: "blue" as const,
       },
       {
         label: "Open Alerts",
         value: overview.open_alerts.toLocaleString(),
         note: `${overview.critical_alerts.toLocaleString()} critical across ${overview.total_alerts.toLocaleString()} total alerts`,
+        accent: "red" as const,
       },
       {
         label: "Integrity Score",
         value: `${overview.integrity_score_percent.toFixed(1)}%`,
         note: `${overview.verified_events.toLocaleString()} verified, ${overview.invalid_events.toLocaleString()} invalid`,
+        accent: "green" as const,
       },
     ];
   }, [overview]);
@@ -1413,92 +1440,207 @@ export default function AnalystDashboardPage() {
     void handleAnalystChatSend(promptParts.join(" "));
   }, [handleAnalystChatSend, selectedAlert, selectedEvent, selectedProjectId]);
 
+  const session = getAnalystSession();
+
+  const sidebarNavItems = [
+    { id: "overview" as const, label: "Overview", icon: LayoutDashboard },
+    { id: "verification" as const, label: "Verification", icon: ShieldAlert },
+    { id: "events" as const, label: "Events", icon: Activity },
+    { id: "alerts" as const, label: "Alerts", icon: AlertTriangle },
+    { id: "reports" as const, label: "Reports", icon: FileText },
+    { id: "copilot" as const, label: "Copilot", icon: BarChart3 },
+  ];
+
   return (
-    <div className="theme-page min-h-screen bg-[#030507] text-white">
-      <SiteHeader />
-      <div className="px-4 pb-8 pt-24 sm:px-5 md:px-8 md:pt-28">
-        <div className="mx-auto max-w-[1500px]">
-          <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/15 bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">
-                <CheckCircle2 size={14} />
-                Analyst Dashboard
-              </div>
-              <h1 className="theme-page-title mt-4 text-4xl font-semibold tracking-[-0.05em] text-white md:text-5xl">
-                Live security analytics and workspace setup
-              </h1>
-              <p className="theme-page-copy mt-3 max-w-3xl text-base leading-7 text-zinc-400">
-                Create your organization, open a project, and register AI application or system
-                log sources from the dashboard before moving into ingestion and monitoring.
-              </p>
-            </div>
-
-            <div className="grid w-full gap-3 sm:grid-cols-2 md:w-auto">
-              <button
-                type="button"
-                onClick={() => setSetupMode("ai_application")}
-                className={`rounded-full px-4 py-3 text-base font-medium transition-colors sm:min-w-[190px] ${
-                  setupMode === "ai_application"
-                    ? "theme-primary-button bg-white text-black"
-                    : "theme-muted-button border border-white/10 bg-white/[0.03] text-zinc-300"
-                }`}
-              >
-                AI Application Source
-              </button>
-              <button
-                type="button"
-                onClick={() => setSetupMode("system_logs")}
-                className={`rounded-full px-4 py-3 text-base font-medium transition-colors sm:min-w-[190px] ${
-                  setupMode === "system_logs"
-                    ? "theme-primary-button bg-white text-black"
-                    : "theme-muted-button border border-white/10 bg-white/[0.03] text-zinc-300"
-                }`}
-              >
-                System Logs Source
-              </button>
-            </div>
-
+    <div className="theme-page theme-dashboard flex min-h-screen overflow-x-hidden">
+      {/* Sidebar — hidden on mobile, icon-only on sm/md, full labels on lg+ */}
+      <aside className="theme-dashboard-sidebar fixed inset-y-0 left-0 z-40 hidden flex-col sm:flex sm:w-14 lg:w-[220px]">
+        {/* Logo */}
+        <div className="theme-dashboard-border flex h-16 items-center justify-center border-b lg:justify-start lg:px-5">
+          <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-blue-600">
+            <ShieldCheck size={14} className="text-white" />
           </div>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-1 lg:px-3">
+          {sidebarNavItems.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              title={label}
+              onClick={() => setActiveTab(id)}
+              className={`w-full flex items-center justify-center gap-3 rounded-xl px-2 py-2.5 text-sm font-medium transition-colors lg:justify-start lg:px-3 ${
+                activeTab === id
+                  ? "bg-blue-600 text-white"
+                  : "theme-dashboard-nav-item"
+              }`}
+            >
+              <Icon size={18} className="flex-shrink-0" />
+              <span className="hidden lg:inline">{label}</span>
+            </button>
+          ))}
+
+          <div className="theme-dashboard-border pt-2 border-t mt-2">
+            <button
+              type="button"
+              title="Settings"
+              onClick={() => setActiveTab("settings")}
+              className={`w-full flex items-center justify-center gap-3 rounded-xl px-2 py-2.5 text-sm font-medium transition-colors lg:justify-start lg:px-3 ${
+                activeTab === "settings"
+                  ? "bg-blue-600 text-white"
+                  : "theme-dashboard-nav-item"
+              }`}
+            >
+              <Settings size={18} className="flex-shrink-0" />
+              <span className="hidden lg:inline">Settings</span>
+            </button>
+          </div>
+        </nav>
+
+        {/* User profile */}
+        <div className="theme-dashboard-border border-t p-2 lg:p-3">
+          <div className="flex items-center justify-center gap-3 rounded-xl px-1 py-2 lg:justify-start lg:px-3">
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-blue-400 text-sm font-bold uppercase">
+              {session?.name ? session.name.charAt(0) : "A"}
+            </div>
+            <div className="hidden min-w-0 flex-1 lg:block">
+              <p className="theme-dashboard-text-primary truncate text-sm font-semibold">{session?.name ?? "Analyst"}</p>
+              <p className="theme-dashboard-text-muted truncate text-xs">{session?.email ?? ""}</p>
+            </div>
+            <button
+              type="button"
+              title="Logout"
+              onClick={() => { logout(); navigateTo("/"); }}
+              className="theme-dashboard-text-muted hidden hover:text-red-500 transition-colors lg:block"
+            >
+              <LogOut size={16} />
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* Mobile bottom nav — visible only on xs (hidden on sm+) */}
+      <nav className="theme-dashboard-topbar fixed bottom-0 left-0 right-0 z-40 flex h-14 items-center justify-around border-t sm:hidden">
+        {[...sidebarNavItems, { id: "settings" as const, label: "Settings", icon: Settings }].slice(0, 5).map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setActiveTab(id)}
+            className={`flex flex-col items-center gap-0.5 px-3 py-1 text-[10px] font-medium transition-colors ${
+              activeTab === id ? "text-blue-500" : "theme-dashboard-text-muted"
+            }`}
+          >
+            <Icon size={18} />
+            {label}
+          </button>
+        ))}
+      </nav>
+
+      {/* Main area */}
+      <div className="flex flex-1 flex-col min-h-screen pl-0 sm:pl-14 lg:pl-[220px]">
+        {/* Top bar */}
+        <header className="theme-dashboard-topbar sticky top-0 z-30 flex min-h-16 items-center justify-between gap-3 px-4 py-3 lg:px-6">
+          <div className="min-w-0 flex items-center gap-2 lg:gap-3">
+            <h1 className="theme-dashboard-text-primary truncate text-base font-bold lg:text-lg">
+              {activeTab === "overview" && "System Overview"}
+              {activeTab === "verification" && "Verification"}
+              {activeTab === "events" && "Events"}
+              {activeTab === "alerts" && "Open Alerts"}
+              {activeTab === "reports" && "Reports"}
+              {activeTab === "copilot" && "Analyst Copilot"}
+              {activeTab === "settings" && "Settings"}
+            </h1>
+            <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-widest text-emerald-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Live Monitoring
+            </span>
+          </div>
+          <div className="flex flex-shrink-0 items-center gap-2 lg:gap-3">
+            <button type="button" className="theme-dashboard-text-muted rounded-full p-2 hover:bg-white/10 transition-colors">
+              <Bell size={18} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("overview")}
+              className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors lg:gap-2 lg:px-4"
+            >
+              <Plus size={15} />
+              <span className="hidden sm:inline">New Project</span>
+            </button>
+          </div>
+        </header>
+
+        {/* Page content */}
+        <main className="flex-1 overflow-y-auto px-3 py-4 pb-20 sm:px-6 sm:py-6 sm:pb-6">
+          <div className="mx-auto w-full max-w-[1280px]">
+
+          {/* ── OVERVIEW ── */}
+          {activeTab === "overview" && <>
 
           <div className="mt-6">
-            <div className="theme-panel relative rounded-[24px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-white/8 dark:bg-[linear-gradient(180deg,#0a1218_0%,#080c12_100%)]">
-              <div className="theme-gridline mb-4 flex items-center justify-between border-b border-zinc-100 pb-4 dark:border-white/8">
-                <div>
-                  <h3 className="theme-section-title text-xl font-semibold text-zinc-900 dark:text-white">
+            <div className="theme-panel relative min-w-0 rounded-[20px] border border-white/8 p-4 sm:rounded-[24px] sm:p-5">
+              <div className="theme-gridline mb-4 flex flex-col gap-3 border-b border-white/8 pb-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <h3 className="theme-section-title break-words text-lg font-semibold text-white sm:text-xl">
                     Workspace onboarding
                   </h3>
-                  <p className="theme-section-copy mt-1 text-base text-zinc-500 dark:text-zinc-400">
+                  <p className="theme-section-copy mt-1 max-w-3xl break-words text-sm leading-6 text-zinc-400 sm:text-base">
                     These objects are stored in FastAPI and PostgreSQL, so they are ready for the
                     next ingestion and integrity steps.
                   </p>
                 </div>
-                {loading ? <LoaderCircle className="h-5 w-5 animate-spin text-sky-300" /> : <ShieldCheck className="h-5 w-5 text-sky-300" />}
+                {loading ? <LoaderCircle className="h-5 w-5 flex-shrink-0 animate-spin text-sky-300" /> : <ShieldCheck className="h-5 w-5 flex-shrink-0 text-sky-300" />}
               </div>
 
-              {/* Horizontal stepper */}
-              <Stepper
-                activeStep={selectedOrganizationId ? (selectedProjectId ? 2 : 1) : 0}
-                sx={{
-                  mb: 4,
-                  "& .MuiStepLabel-root .Mui-completed": { color: "#2563eb" },
-                  "& .MuiStepLabel-root .Mui-active": { color: "#2563eb" },
-                  "& .MuiStepIcon-root.Mui-active": { color: "#2563eb" },
-                  "& .MuiStepIcon-root.Mui-completed": { color: "#2563eb" },
-                  "& .MuiStepConnector-line": { borderColor: "#cbd5e1" },
-                }}
-              >
-                <Step><StepLabel>Organization</StepLabel></Step>
-                <Step><StepLabel>Project</StepLabel></Step>
-                <Step><StepLabel>{setupMode === "ai_application" ? "AI Application Source" : "System Logs Source"}</StepLabel></Step>
-              </Stepper>
+              {/* Desktop stepper */}
+              <div className="mb-4 hidden sm:block">
+                <Stepper
+                  activeStep={selectedOrganizationId ? (selectedProjectId ? 2 : 1) : 0}
+                  sx={{
+                    "& .MuiStepLabel-label": { color: "#a1a1aa" },
+                    "& .MuiStepLabel-label.Mui-active": { color: "#2563eb", fontWeight: 600 },
+                    "& .MuiStepLabel-label.Mui-completed": { color: "#a1a1aa" },
+                    "& .MuiStepIcon-root": { color: "#3f3f46" },
+                    "& .MuiStepIcon-root.Mui-active": { color: "#2563eb" },
+                    "& .MuiStepIcon-root.Mui-completed": { color: "#2563eb" },
+                    "& .MuiStepConnector-line": { borderColor: "#27272a" },
+                  }}
+                >
+                  <Step><StepLabel>Organization</StepLabel></Step>
+                  <Step><StepLabel>Project</StepLabel></Step>
+                  <Step><StepLabel>{setupMode === "ai_application" ? "AI Application Source" : "System Logs Source"}</StepLabel></Step>
+                </Stepper>
+              </div>
+
+              {/* Mobile stepper */}
+              <div className="mb-3 block sm:hidden">
+                <Stepper
+                  orientation="vertical"
+                  activeStep={selectedOrganizationId ? (selectedProjectId ? 2 : 1) : 0}
+                  sx={{
+                    "& .MuiStepLabel-label": { color: "#a1a1aa", fontSize: "0.875rem" },
+                    "& .MuiStepLabel-label.Mui-active": { color: "#2563eb", fontWeight: 600 },
+                    "& .MuiStepLabel-label.Mui-completed": { color: "#a1a1aa" },
+                    "& .MuiStepIcon-root": { color: "#3f3f46" },
+                    "& .MuiStepIcon-root.Mui-active": { color: "#2563eb" },
+                    "& .MuiStepIcon-root.Mui-completed": { color: "#2563eb" },
+                    "& .MuiStepConnector-line": { borderColor: "#27272a", minHeight: 16 },
+                  }}
+                >
+                  <Step><StepLabel>Organization</StepLabel></Step>
+                  <Step><StepLabel>Project</StepLabel></Step>
+                  <Step><StepLabel>{setupMode === "ai_application" ? "AI Source" : "Logs Source"}</StepLabel></Step>
+                </Stepper>
+              </div>
 
               {/* Step content panel */}
-              <div className="grid gap-6 lg:grid-cols-2">
-                <div className="space-y-4">
+              <div className="grid min-w-0 gap-6 lg:grid-cols-2">
+                <div className="min-w-0 space-y-4">
                   {/* Step 1 content */}
                   {!selectedOrganizationId && (
                     <>
-                      <p className="text-sm text-zinc-500">Choose an existing organization or create a new one.</p>
+                      <p className="break-words text-sm leading-6 text-zinc-500">Choose an existing organization or create a new one.</p>
                       <SelectField
                         label="Existing Organization"
                         value={selectedOrganizationId}
@@ -1506,6 +1648,11 @@ export default function AnalystDashboardPage() {
                         options={organizationOptions}
                         placeholder="Choose an organization"
                       />
+                      <div className="relative flex items-center gap-3 py-1">
+                        <div className="h-px flex-1 bg-white/10" />
+                        <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">or</span>
+                        <div className="h-px flex-1 bg-white/10" />
+                      </div>
                       <Field
                         label="New Organization Name"
                         value={organizationName}
@@ -1516,7 +1663,7 @@ export default function AnalystDashboardPage() {
                         type="button"
                         onClick={() => void handleCreateOrganization()}
                         disabled={submittingAction === "organization"}
-                        className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+                        className="theme-primary-button inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-base font-semibold text-black transition-colors hover:bg-zinc-200 disabled:opacity-60 sm:w-auto"
                       >
                         {submittingAction === "organization" ? <LoaderCircle size={14} className="animate-spin" /> : null}
                         Create Organization
@@ -1527,7 +1674,7 @@ export default function AnalystDashboardPage() {
                   {/* Step 2 content */}
                   {selectedOrganizationId && !selectedProjectId && (
                     <>
-                      <p className="text-sm text-zinc-500">Pick an existing project or create a new one under <span className="font-medium text-zinc-800">{selectedOrganizationName}</span>.</p>
+                      <p className="break-words text-sm leading-6 text-zinc-500">Pick an existing project or create a new one under <span className="font-medium text-zinc-800">{selectedOrganizationName}</span>.</p>
                       <SelectField
                         label="Existing Project"
                         value={selectedProjectId}
@@ -1535,18 +1682,23 @@ export default function AnalystDashboardPage() {
                         options={projectOptions}
                         placeholder="Choose a project"
                       />
+                      <div className="relative flex items-center gap-3 py-1">
+                        <div className="h-px flex-1 bg-white/10" />
+                        <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">or</span>
+                        <div className="h-px flex-1 bg-white/10" />
+                      </div>
                       <Field
                         label="New Project Name"
                         value={projectName}
                         onChange={setProjectName}
                         placeholder="e.g. Q3 Security Audit"
                       />
-                      <div className="flex gap-2">
+                      <div className="flex flex-col gap-2 sm:flex-row">
                         <button
                           type="button"
                           onClick={() => void handleCreateProject()}
                           disabled={submittingAction === "project"}
-                          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+                          className="theme-primary-button inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-base font-semibold text-black transition-colors hover:bg-zinc-200 disabled:opacity-60"
                         >
                           {submittingAction === "project" ? <LoaderCircle size={14} className="animate-spin" /> : null}
                           Create Project
@@ -1554,7 +1706,7 @@ export default function AnalystDashboardPage() {
                         <button
                           type="button"
                           onClick={() => setSelectedOrganizationId("")}
-                          className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-600 transition-colors hover:bg-zinc-50"
+                          className="inline-flex items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-600 transition-colors hover:bg-zinc-50"
                         >
                           Back
                         </button>
@@ -1565,7 +1717,36 @@ export default function AnalystDashboardPage() {
                   {/* Step 3 content */}
                   {selectedOrganizationId && selectedProjectId && (
                     <>
-                      <p className="text-sm text-zinc-500">Register a source for <span className="font-medium text-zinc-800">{selectedProjectName}</span>.</p>
+                      <p className="break-words text-sm leading-6 text-zinc-500">Register a source for <span className="font-medium text-zinc-800">{selectedProjectName}</span>.</p>
+                      <div>
+                        <p className="theme-input-label mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-zinc-500">
+                          Source Type
+                        </p>
+                        <div className="theme-dashboard-border inline-flex w-full items-center gap-1 rounded-full border bg-white/5 p-1 sm:w-auto">
+                          <button
+                            type="button"
+                            onClick={() => setSetupMode("ai_application")}
+                            className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition-colors sm:flex-none ${
+                              setupMode === "ai_application"
+                                ? "bg-blue-600 text-white shadow-sm"
+                                : "theme-dashboard-text-muted hover:text-white"
+                            }`}
+                          >
+                            AI App
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSetupMode("system_logs")}
+                            className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition-colors sm:flex-none ${
+                              setupMode === "system_logs"
+                                ? "bg-blue-600 text-white shadow-sm"
+                                : "theme-dashboard-text-muted hover:text-white"
+                            }`}
+                          >
+                            System Logs
+                          </button>
+                        </div>
+                      </div>
                       <SelectField
                         label="Existing Source"
                         value={selectedSourceId}
@@ -1590,12 +1771,12 @@ export default function AnalystDashboardPage() {
                         ]}
                         placeholder="Choose a status"
                       />
-                      <div className="flex gap-2">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                         <button
                           type="button"
                           onClick={() => void handleCreateSource()}
                           disabled={submittingAction === "source"}
-                          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+                          className="theme-primary-button inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-base font-semibold text-black transition-colors hover:bg-zinc-200 disabled:opacity-60"
                         >
                           {submittingAction === "source" ? <LoaderCircle size={14} className="animate-spin" /> : null}
                           Save Source
@@ -1604,7 +1785,7 @@ export default function AnalystDashboardPage() {
                           type="button"
                           onClick={() => void loadWorkspace()}
                           disabled={loading}
-                          className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-600 transition-colors hover:bg-zinc-50 disabled:opacity-60"
+                          className="theme-muted-button inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-5 py-3 text-base font-semibold text-zinc-200 transition-colors hover:bg-white/[0.06] disabled:opacity-60"
                         >
                           <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
                           Refresh
@@ -1612,7 +1793,7 @@ export default function AnalystDashboardPage() {
                         <button
                           type="button"
                           onClick={() => setSelectedProjectId("")}
-                          className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-600 transition-colors hover:bg-zinc-50"
+                          className="inline-flex items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-600 transition-colors hover:bg-zinc-50"
                         >
                           Back
                         </button>
@@ -1622,7 +1803,7 @@ export default function AnalystDashboardPage() {
                 </div>
 
                 {/* Right panel — saved items summary */}
-                <div className="space-y-3">
+                <div className="min-w-0 space-y-3">
                   {organizations.length > 0 && (
                     <EntityList
                       title="Saved organizations"
@@ -1645,14 +1826,14 @@ export default function AnalystDashboardPage() {
                     />
                   )}
                   {organizations.length === 0 && (
-                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-500">
-                      <p className="font-semibold text-zinc-700">Configure in 3 steps</p>
-                      <ol className="mt-2 space-y-1 list-decimal list-inside">
-                        <li>Create or select an <span className="font-medium text-zinc-800">Organization</span></li>
-                        <li>Create or select a <span className="font-medium text-zinc-800">Project</span></li>
-                        <li>Register an <span className="font-medium text-zinc-800">Ingestion Source</span></li>
+                    <div className="theme-item-surface rounded-xl border p-4 text-sm">
+                      <p className="theme-section-title font-semibold">Configure in 3 steps</p>
+                      <ol className="mt-2 space-y-1 list-decimal list-inside theme-section-copy">
+                        <li>Create or select an <span className="font-semibold theme-section-title">Organization</span></li>
+                        <li>Create or select a <span className="font-semibold theme-section-title">Project</span></li>
+                        <li>Register an <span className="font-semibold theme-section-title">Ingestion Source</span></li>
                       </ol>
-                      <p className="mt-3 text-xs text-zinc-400">Objects are stored in FastAPI + PostgreSQL and ready for ingestion.</p>
+                      <p className="mt-3 text-xs theme-faint-text">Objects are stored in FastAPI + PostgreSQL and ready for ingestion.</p>
                     </div>
                   )}
                   {latestSourceKey ? (
@@ -1666,14 +1847,14 @@ export default function AnalystDashboardPage() {
                         </div>
                         <KeyRound className="mt-1 h-5 w-5 text-emerald-600" />
                       </div>
-                      <div className="mt-3 rounded-xl border border-emerald-200 bg-white px-3 py-3 font-mono text-sm text-emerald-800">
+                      <div className="mt-3 break-all rounded-xl border border-emerald-200 bg-white px-3 py-3 font-mono text-sm text-emerald-800">
                         {latestSourceKey.plainApiKey}
                       </div>
-                      <div className="mt-3 flex gap-3">
-                        <button type="button" onClick={() => void handleCopyLatestSourceKey()} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+                      <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+                        <button type="button" onClick={() => void handleCopyLatestSourceKey()} className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
                           <Copy size={14} /> Copy key
                         </button>
-                        <button type="button" onClick={() => setLatestSourceKey(null)} className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50">
+                        <button type="button" onClick={() => setLatestSourceKey(null)} className="inline-flex items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50">
                           Hide key
                         </button>
                       </div>
@@ -1690,7 +1871,7 @@ export default function AnalystDashboardPage() {
               </p>
 
               {(errorMessage || successMessage) ? (
-                <div className="pointer-events-none absolute right-4 top-4 z-20 max-w-sm">
+                <div className="pointer-events-none absolute inset-x-4 top-4 z-20 sm:left-auto sm:max-w-sm">
                   <div
                     className={`pointer-events-auto rounded-2xl border px-4 py-3 shadow-[0_18px_50px_rgba(0,0,0,0.22)] backdrop-blur ${
                       errorMessage
@@ -1720,7 +1901,7 @@ export default function AnalystDashboardPage() {
             </div>
           </div>
 
-          <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {metrics.map((metric) => (
               <MetricCard key={metric.label} {...metric} />
             ))}
@@ -1738,7 +1919,7 @@ export default function AnalystDashboardPage() {
           <div className="mt-6 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
             <TimelineChart />
 
-            <div className="theme-panel rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,#0a1218_0%,#080c12_100%)] p-5">
+            <div className="theme-panel rounded-[24px] border border-white/8 p-5">
               <div className="theme-gridline mb-4 flex items-center justify-between border-b border-white/8 pb-4">
                 <div>
                   <h3 className="theme-section-title text-lg font-semibold text-white">
@@ -1752,7 +1933,7 @@ export default function AnalystDashboardPage() {
               </div>
 
               <div className="grid gap-3">
-                <div className="theme-item-surface rounded-[16px] border border-white/8 bg-[#091017] px-4 py-3">
+                <div className="theme-item-surface rounded-[16px] border border-white/8 px-4 py-3">
                   <p className="theme-faint-text text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
                     Organization
                   </p>
@@ -1760,7 +1941,7 @@ export default function AnalystDashboardPage() {
                     {selectedOrganizationName}
                   </p>
                 </div>
-                <div className="theme-item-surface rounded-[16px] border border-white/8 bg-[#091017] px-4 py-3">
+                <div className="theme-item-surface rounded-[16px] border border-white/8 px-4 py-3">
                   <p className="theme-faint-text text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
                     Project
                   </p>
@@ -1768,7 +1949,7 @@ export default function AnalystDashboardPage() {
                     {selectedProjectName}
                   </p>
                 </div>
-                <div className="theme-item-surface rounded-[16px] border border-white/8 bg-[#091017] px-4 py-3">
+                <div className="theme-item-surface rounded-[16px] border border-white/8 px-4 py-3">
                   <p className="theme-faint-text text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
                     Registered Sources
                   </p>
@@ -1781,7 +1962,7 @@ export default function AnalystDashboardPage() {
                       : "Create an AI application source or system logs source to continue."}
                   </p>
                 </div>
-                <div className="theme-item-surface rounded-[16px] border border-white/8 bg-[#091017] px-4 py-3">
+                <div className="theme-item-surface rounded-[16px] border border-white/8 px-4 py-3">
                   <p className="theme-faint-text text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
                     Selected Source
                   </p>
@@ -1841,7 +2022,7 @@ export default function AnalystDashboardPage() {
                     </div>
                   ) : null}
                 </div>
-                <div className="theme-item-surface rounded-[16px] border border-white/8 bg-[#091017] px-4 py-3">
+                <div className="theme-item-surface rounded-[16px] border border-white/8 px-4 py-3">
                   <p className="theme-faint-text text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
                     Alert posture
                   </p>
@@ -1854,7 +2035,7 @@ export default function AnalystDashboardPage() {
                       : "Once risky events are ingested, alerts will appear here."}
                   </p>
                 </div>
-                <div className="theme-item-surface rounded-[16px] border border-white/8 bg-[#091017] px-4 py-3">
+                <div className="theme-item-surface rounded-[16px] border border-white/8 px-4 py-3">
                   <p className="theme-faint-text text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
                     Pilot test ingestion
                   </p>
@@ -1940,8 +2121,12 @@ export default function AnalystDashboardPage() {
             </div>
           </div>
 
+          </>}
+          {/* ── VERIFICATION ── */}
+          {activeTab === "verification" && <>
+
           <div className="mt-6">
-            <div className="theme-panel rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,#0a1218_0%,#080c12_100%)] p-5">
+            <div className="theme-panel rounded-[24px] border border-white/8 p-5">
               <div className="theme-gridline mb-4 flex items-center justify-between border-b border-white/8 pb-4">
                 <div>
                   <h3 className="theme-section-title text-lg font-semibold text-white">
@@ -1986,7 +2171,7 @@ export default function AnalystDashboardPage() {
 
               <div className="mt-4 grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
                 <div className="grid gap-3">
-                  <div className="theme-item-surface rounded-[16px] border border-white/8 bg-[#091017] px-4 py-3">
+                  <div className="theme-item-surface rounded-[16px] border border-white/8 px-4 py-3">
                     <p className="theme-faint-text text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
                       Project integrity summary
                     </p>
@@ -2025,7 +2210,7 @@ export default function AnalystDashboardPage() {
                     )}
                   </div>
 
-                  <div className="theme-item-surface rounded-[16px] border border-white/8 bg-[#091017] px-4 py-3">
+                  <div className="theme-item-surface rounded-[16px] border border-white/8 px-4 py-3">
                     <p className="theme-faint-text text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
                       Selected source verification
                     </p>
@@ -2109,7 +2294,7 @@ export default function AnalystDashboardPage() {
                   </div>
                 </div>
 
-                <div className="theme-item-surface rounded-[16px] border border-white/8 bg-[#091017] p-4">
+                <div className="theme-item-surface rounded-[16px] border border-white/8 p-4">
                   <p className="theme-faint-text text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
                     Source verification rollup
                   </p>
@@ -2159,8 +2344,12 @@ export default function AnalystDashboardPage() {
             </div>
           </div>
 
+          </>}
+          {/* ── EVENTS ── */}
+          {activeTab === "events" && <>
+
           <div className="mt-6 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-            <div className="theme-panel rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,#0a1218_0%,#080c12_100%)] p-5">
+            <div className="theme-panel rounded-[24px] border border-white/8 p-5">
               <div className="theme-gridline mb-4 flex items-center justify-between border-b border-white/8 pb-4">
                 <div>
                   <h3 className="theme-section-title text-lg font-semibold text-white">
@@ -2198,7 +2387,7 @@ export default function AnalystDashboardPage() {
                   </div>
                 </div>
 
-                <div className="theme-card-surface overflow-hidden rounded-[20px] border border-white/8 bg-[#091017]">
+                <div className="theme-card-surface overflow-hidden rounded-[20px] border border-white/8">
                   <button
                     type="button"
                     onClick={() => setEventExplorerOpen((current) => !current)}
@@ -2292,7 +2481,7 @@ export default function AnalystDashboardPage() {
               </div>
             </div>
 
-            <div className="theme-panel rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,#0a1218_0%,#080c12_100%)] p-5">
+            <div className="theme-panel rounded-[24px] border border-white/8 p-5">
               <div className="theme-gridline mb-4 flex items-center justify-between border-b border-white/8 pb-4">
                 <div>
                   <h3 className="theme-section-title text-lg font-semibold text-white">
@@ -2305,7 +2494,7 @@ export default function AnalystDashboardPage() {
                 <AlertTriangle className="h-5 w-5 text-rose-300" />
               </div>
 
-              <div className="theme-card-surface overflow-hidden rounded-[20px] border border-white/8 bg-[#091017]">
+              <div className="theme-card-surface overflow-hidden rounded-[20px] border border-white/8">
                 <button
                   type="button"
                   onClick={() => setOpenAlertsExpanded((current) => !current)}
@@ -2459,8 +2648,12 @@ export default function AnalystDashboardPage() {
             </div>
           </div>
 
+          </>}
+          {/* ── REPORTS ── */}
+          {activeTab === "reports" && <>
+
           <div className="mt-6">
-            <div className="theme-panel rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,#0a1218_0%,#080c12_100%)] p-5">
+            <div className="theme-panel rounded-[24px] border border-white/8 p-5">
               <div className="theme-gridline mb-4 flex items-center justify-between border-b border-white/8 pb-4">
                 <div>
                   <h3 className="theme-section-title text-lg font-semibold text-white">
@@ -2515,7 +2708,7 @@ export default function AnalystDashboardPage() {
               {auditReport ? (
                 <div className="mt-4 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
                   <div className="grid gap-3">
-                    <div className="theme-item-surface rounded-[16px] border border-white/8 bg-[#091017] px-4 py-3">
+                    <div className="theme-item-surface rounded-[16px] border border-white/8 px-4 py-3">
                       <p className="theme-faint-text text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
                         Report summary
                       </p>
@@ -2529,7 +2722,7 @@ export default function AnalystDashboardPage() {
                         Generated {formatAlertTimestamp(auditReport.generated_at)} · {auditReport.reporting_window}
                       </p>
                     </div>
-                    <div className="theme-item-surface rounded-[16px] border border-white/8 bg-[#091017] px-4 py-3">
+                    <div className="theme-item-surface rounded-[16px] border border-white/8 px-4 py-3">
                       <p className="theme-faint-text text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
                         Control posture
                       </p>
@@ -2560,7 +2753,7 @@ export default function AnalystDashboardPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="theme-item-surface rounded-[16px] border border-white/8 bg-[#091017] px-4 py-3">
+                    <div className="theme-item-surface rounded-[16px] border border-white/8 px-4 py-3">
                       <p className="theme-faint-text text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
                         Source coverage
                       </p>
@@ -2589,7 +2782,7 @@ export default function AnalystDashboardPage() {
                   </div>
 
                   <div className="grid gap-4">
-                    <div className="theme-item-surface rounded-[16px] border border-white/8 bg-[#091017] p-4">
+                    <div className="theme-item-surface rounded-[16px] border border-white/8 p-4">
                       <p className="theme-faint-text text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
                         Recent alerts
                       </p>
@@ -2613,7 +2806,7 @@ export default function AnalystDashboardPage() {
                         )}
                       </div>
                     </div>
-                    <div className="theme-item-surface rounded-[16px] border border-white/8 bg-[#091017] p-4">
+                    <div className="theme-item-surface rounded-[16px] border border-white/8 p-4">
                       <p className="theme-faint-text text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
                         Recent evidence
                       </p>
@@ -2639,7 +2832,7 @@ export default function AnalystDashboardPage() {
                         )}
                       </div>
                     </div>
-                    <div className="theme-item-surface rounded-[16px] border border-white/8 bg-[#091017] p-4">
+                    <div className="theme-item-surface rounded-[16px] border border-white/8 p-4">
                       <p className="theme-faint-text text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
                         Raw report JSON
                       </p>
@@ -2650,15 +2843,19 @@ export default function AnalystDashboardPage() {
                   </div>
                 </div>
               ) : (
-                <div className="mt-4 rounded-[18px] border border-white/8 bg-[#091017] px-4 py-8 text-base text-zinc-400">
+                <div className="mt-4 rounded-[18px] border border-white/8 px-4 py-8 text-base text-zinc-400">
                   Generate a report to capture the selected project’s current controls, evidence, sources, and alert posture in one snapshot.
                 </div>
               )}
             </div>
           </div>
 
+          </>}
+          {/* ── COPILOT ── */}
+          {activeTab === "copilot" && <>
+
           <div className="mt-6">
-            <div className="theme-panel rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,#0a1218_0%,#080c12_100%)] p-5">
+            <div className="theme-panel rounded-[24px] border border-white/8 p-5">
               <div className="theme-gridline mb-4 flex items-center justify-between border-b border-white/8 pb-4">
                 <div>
                   <h3 className="theme-section-title text-lg font-semibold text-white">
@@ -2672,7 +2869,7 @@ export default function AnalystDashboardPage() {
               </div>
 
               <div className="mb-4 grid gap-3 md:grid-cols-3">
-                <div className="theme-item-surface rounded-[16px] border border-white/8 bg-[#091017] px-4 py-3">
+                <div className="theme-item-surface rounded-[16px] border border-white/8 px-4 py-3">
                   <p className="theme-faint-text text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
                     Project context
                   </p>
@@ -2680,7 +2877,7 @@ export default function AnalystDashboardPage() {
                     {selectedProjectName}
                   </p>
                 </div>
-                <div className="theme-item-surface rounded-[16px] border border-white/8 bg-[#091017] px-4 py-3">
+                <div className="theme-item-surface rounded-[16px] border border-white/8 px-4 py-3">
                   <p className="theme-faint-text text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
                     Alert context
                   </p>
@@ -2688,7 +2885,7 @@ export default function AnalystDashboardPage() {
                     {selectedAlert?.title ?? "No alert selected"}
                   </p>
                 </div>
-                <div className="theme-item-surface rounded-[16px] border border-white/8 bg-[#091017] px-4 py-3">
+                <div className="theme-item-surface rounded-[16px] border border-white/8 px-4 py-3">
                   <p className="theme-faint-text text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
                     Event context
                   </p>
@@ -2732,8 +2929,12 @@ export default function AnalystDashboardPage() {
             </div>
           </div>
 
+          </>}
+          {/* ── EVENTS: Incident Replay (shown when an event is selected) ── */}
+          {activeTab === "events" && <>
+
           <div className="mt-6">
-            <div className="theme-panel rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,#0a1218_0%,#080c12_100%)] p-5">
+            <div className="theme-panel rounded-[24px] border border-white/8 p-5">
               <div className="theme-gridline mb-4 flex items-center justify-between border-b border-white/8 pb-4">
                 <div>
                   <h3 className="theme-section-title text-lg font-semibold text-white">
@@ -2749,7 +2950,7 @@ export default function AnalystDashboardPage() {
               {selectedEvent ? (
                 <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
                   <div className="grid gap-3">
-                    <div className="theme-item-surface rounded-[16px] border border-white/8 bg-[#091017] px-4 py-3">
+                    <div className="theme-item-surface rounded-[16px] border border-white/8 px-4 py-3">
                       <p className="theme-faint-text text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
                         Event summary
                       </p>
@@ -2760,7 +2961,7 @@ export default function AnalystDashboardPage() {
                         {titleCaseKind(selectedEvent.kind)} event from {selectedEvent.source_name} at {formatAlertTimestamp(selectedEvent.timestamp)}.
                       </p>
                     </div>
-                    <div className="theme-item-surface rounded-[16px] border border-white/8 bg-[#091017] px-4 py-3">
+                    <div className="theme-item-surface rounded-[16px] border border-white/8 px-4 py-3">
                       <p className="theme-faint-text text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
                         Replay context
                       </p>
@@ -2785,7 +2986,7 @@ export default function AnalystDashboardPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="theme-item-surface rounded-[16px] border border-white/8 bg-[#091017] px-4 py-3">
+                    <div className="theme-item-surface rounded-[16px] border border-white/8 px-4 py-3">
                       <p className="theme-faint-text text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
                         Integrity chain
                       </p>
@@ -2800,7 +3001,7 @@ export default function AnalystDashboardPage() {
 
                   <div className="grid gap-4">
                     {selectedEvent.prompt ? (
-                      <div className="theme-item-surface rounded-[16px] border border-white/8 bg-[#091017] p-4">
+                      <div className="theme-item-surface rounded-[16px] border border-white/8 p-4">
                         <p className="theme-faint-text text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
                           Prompt
                         </p>
@@ -2810,7 +3011,7 @@ export default function AnalystDashboardPage() {
                       </div>
                     ) : null}
                     {selectedEvent.response ? (
-                      <div className="theme-item-surface rounded-[16px] border border-white/8 bg-[#091017] p-4">
+                      <div className="theme-item-surface rounded-[16px] border border-white/8 p-4">
                         <p className="theme-faint-text text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
                           Response
                         </p>
@@ -2819,7 +3020,7 @@ export default function AnalystDashboardPage() {
                         </pre>
                       </div>
                     ) : null}
-                    <div className="theme-item-surface rounded-[16px] border border-white/8 bg-[#091017] p-4">
+                    <div className="theme-item-surface rounded-[16px] border border-white/8 p-4">
                       <p className="theme-faint-text text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
                         Raw payload
                       </p>
@@ -2827,7 +3028,7 @@ export default function AnalystDashboardPage() {
                         {JSON.stringify(selectedEvent.raw_payload, null, 2)}
                       </pre>
                     </div>
-                    <div className="theme-item-surface rounded-[16px] border border-white/8 bg-[#091017] p-4">
+                    <div className="theme-item-surface rounded-[16px] border border-white/8 p-4">
                       <p className="theme-faint-text text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
                         Event metadata
                       </p>
@@ -2838,16 +3039,125 @@ export default function AnalystDashboardPage() {
                   </div>
                 </div>
               ) : (
-                <div className="rounded-[18px] border border-white/8 bg-[#091017] px-4 py-8 text-base text-zinc-400">
+                <div className="rounded-[18px] border border-white/8 px-4 py-8 text-base text-zinc-400">
                   Select an event from the explorer or click an alert to replay the linked evidence here.
                 </div>
               )}
             </div>
           </div>
-        </div>
-      </div>
+          </>}
 
-      <SiteFooter />
+          {/* ── ALERTS ── */}
+          {activeTab === "alerts" && <>
+          <div className="mt-6 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+            <div className="theme-panel rounded-[24px] border border-white/8 p-5">
+              <div className="theme-gridline mb-4 flex items-center justify-between border-b border-white/8 pb-4">
+                <div>
+                  <h3 className="theme-section-title text-lg font-semibold text-white">Open alerts</h3>
+                  <p className="theme-section-copy mt-1 text-base text-zinc-400">Active risk detections for the selected project.</p>
+                </div>
+                <AlertTriangle className="h-5 w-5 text-amber-400" />
+              </div>
+              <div className="space-y-2">
+                {alertsLoading && <div className="flex justify-center py-6"><LoaderCircle size={20} className="animate-spin text-zinc-400" /></div>}
+                {!alertsLoading && alerts.length === 0 && (
+                  <div className="rounded-[16px] border border-white/8 px-4 py-8 text-center text-base text-zinc-400">No open alerts for this project.</div>
+                )}
+                {alerts.map((alert) => (
+                  <button
+                    key={alert.id}
+                    type="button"
+                    onClick={() => void handleSelectAlert(alert.id)}
+                    className={`w-full rounded-[16px] border p-3 text-left transition-colors ${alert.id === selectedAlert?.id ? "border-amber-500/40 bg-amber-500/10" : "border-white/8 hover:border-white/20"}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-semibold text-white">{alert.title}</p>
+                      <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase ${alert.severity === "critical" ? "bg-red-500/20 text-red-300" : alert.severity === "high" ? "bg-orange-500/20 text-orange-300" : "bg-amber-500/20 text-amber-300"}`}>{alert.severity}</span>
+                    </div>
+                    <p className="mt-1 text-sm text-zinc-400">{alert.description}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="theme-panel rounded-[24px] border border-white/8 p-5">
+              <div className="theme-gridline mb-4 flex items-center justify-between border-b border-white/8 pb-4">
+                <h3 className="theme-section-title text-lg font-semibold text-white">Alert detail</h3>
+              </div>
+              {selectedAlert ? (
+                <div className="space-y-4">
+                  <div>
+                    <p className="theme-faint-text text-xs font-semibold uppercase tracking-[0.08em] text-zinc-500">Title</p>
+                    <p className="mt-1 text-base font-semibold text-white">{selectedAlert.title}</p>
+                  </div>
+                  <div>
+                    <p className="theme-faint-text text-xs font-semibold uppercase tracking-[0.08em] text-zinc-500">Description</p>
+                    <p className="mt-1 text-base text-zinc-300">{selectedAlert.description}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {[
+                      { label: "Status", value: selectedAlert.status },
+                      { label: "Severity", value: selectedAlert.severity },
+                      { label: "Score", value: selectedAlert.score != null ? selectedAlert.score.toFixed(2) : "—" },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="theme-item-surface rounded-[14px] border border-white/8 px-3 py-2">
+                        <p className="theme-faint-text text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">{label}</p>
+                        <p className="mt-0.5 text-sm font-semibold text-white capitalize">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => void handleAlertStatusUpdate("acknowledge")} className="rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-zinc-300 transition-colors hover:border-blue-500/40 hover:text-blue-300">Acknowledge</button>
+                    <button type="button" onClick={() => void handleAlertStatusUpdate("resolve")} className="rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-zinc-300 transition-colors hover:border-emerald-500/40 hover:text-emerald-300">Resolve</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-[16px] border border-white/8 px-4 py-8 text-center text-base text-zinc-400">Select an alert to see details.</div>
+              )}
+            </div>
+          </div>
+          </>}
+
+          {/* ── SETTINGS ── */}
+          {activeTab === "settings" && <>
+          <div className="mt-6 grid gap-6 lg:grid-cols-2">
+            <div className="theme-panel rounded-[24px] border border-white/8 p-5">
+              <div className="theme-gridline mb-4 border-b border-white/8 pb-4">
+                <h3 className="theme-section-title text-lg font-semibold text-white">Source mode</h3>
+                <p className="theme-section-copy mt-1 text-base text-zinc-400">Choose which type of source you are configuring.</p>
+              </div>
+              <div className="flex gap-3">
+                {(["ai_application", "system_logs"] as const).map((mode) => (
+                  <button key={mode} type="button" onClick={() => setSetupMode(mode)}
+                    className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${setupMode === mode ? "bg-blue-600 text-white" : "border border-white/10 text-zinc-400 hover:text-white"}`}>
+                    {mode === "ai_application" ? "AI Application" : "System Logs"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="theme-panel rounded-[24px] border border-white/8 p-5">
+              <div className="theme-gridline mb-4 border-b border-white/8 pb-4">
+                <h3 className="theme-section-title text-lg font-semibold text-white">Account</h3>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-600/20 text-xl font-bold uppercase text-blue-400">
+                  {session?.name ? session.name.charAt(0) : "A"}
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-white">{session?.name ?? "Analyst"}</p>
+                  <p className="text-sm text-zinc-400">{session?.email ?? ""}</p>
+                </div>
+              </div>
+              <button type="button" onClick={() => { logout(); navigateTo("/"); }}
+                className="mt-4 inline-flex items-center gap-2 rounded-full border border-red-500/30 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/10">
+                <LogOut size={14} /> Sign out
+              </button>
+            </div>
+          </div>
+          </>}
+
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

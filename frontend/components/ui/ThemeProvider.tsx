@@ -68,7 +68,7 @@ export function GlobalThemeToggle() {
     <button
       type="button"
       onClick={toggleTheme}
-      className="theme-toggle-button fixed right-18 top-6 z-[95] inline-flex h-11 w-11 items-center justify-center rounded-full border shadow-[0_12px_40px_rgba(0,0,0,0.18)] backdrop-blur-md transition-transform hover:scale-[1.03] lg:right-6 lg:top-6"
+      className="theme-toggle-button fixed bottom-6 right-6 z-[95] inline-flex h-11 w-11 items-center justify-center rounded-full border shadow-[0_12px_40px_rgba(0,0,0,0.18)] backdrop-blur-md transition-transform hover:scale-[1.03]"
       aria-label={`Switch to ${nextTheme} mode`}
       title={`Switch to ${nextTheme} mode`}
     >
